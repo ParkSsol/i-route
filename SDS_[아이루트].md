@@ -116,12 +116,9 @@
 9. 지각 위험 알림(도착 지연 예상 시 알림)
 10. 탑승 학생 미리 알림 (3호차-누구, 누구, 누구 탑승)
 11. 차량 및 기사 정보 조회(기사 연락처, 차량 번호 등)
-12. 미탑승, 미하차 시 알림
-13. 긴급 연락 (문제 시 차량 기사나 학원 관리자가 보호자와 빠른 연락 가능)
-14. 지연 원인 표시(교통체증, 장시간 정차 등)
-15. 기사님께 최적의 노선 추천(빠른 경로 및 안전 경로 추천)
-16. 탑승 가능 좌석 수 표시 (차량 별 남은 자리 확인 용도)
-17. 위치 공유 시간 제한(운행 시간에만 차 위치 공유)
+12. 지연 원인 표시(교통체증, 장시간 정차 등)
+13. 기사님께 최적의 노선 추천(빠른 경로 및 안전 경로 추천)
+14. 위치 공유 시간 제한(운행 시간에만 차 위치 공유)
 
 ## 게시판
 
@@ -235,6 +232,156 @@
 - **Concurrency**: 최대 500명 동시 가입 요청을 처리할 수 있도록 API 서버 및 DB connection pool을 설정한다.
 - **Due Date**: 2025. 11. 01 (예정)
 
+---
+## GPS
+
+### **Use case #1 : GitHub OAuth 학생 탑승 알림**
+#### GENERAL CHARACTERISTICS
+- **Summary**  
+  
+
+- **Scope**  
+  아이루트
+
+- **Level**  
+   
+
+- **Author**  
+  
+
+- **Last Update**  
+  
+
+- **Status**  
+  
+
+- **Primary Actor**  
+  
+
+- **Preconditions**  
+  1. 
+
+- **Trigger**  
+  
+
+- **Success Post Condition**  
+  1.
+- **Failed Post Condition**  
+ 1.  
+
+#### MAIN SUCCESS SCENARIO
+| Step | Action                                                                                                |
+| ---- | ----------------------------------------------------------------------------------------------------- |
+| S    | .                                                                           |
+| 1    |                                                         |
+| 2    |                                                                       |
+| 3    |                                               |
+| 4    |                                          |
+| 5    |                                                |
+| 6    |                                                             |
+| 7    |  |
+| 8    |                                 |
+| 9    |                                                              |
+| 10   |                                                                |
+
+
+
+
+#### EXTENSION SCENARIOS
+| Step | Branching Action                                                                           |
+| ---- | ------------------------------------------------------------------------------------------ |
+| 4a   | |
+| 5a   |                  |
+| 7a   |                            |
+| 7b   |                                   |
+| 8a   |                                                       |
+| 9a   |                           |
+
+
+
+
+#### RELATED INFORMATION
+- **Performance**: 
+- **Frequency**:
+
+
+- **Concurrency**: 
+- **Due Date**: 
+
+### **Use case #1 : GitHub OAuth 학생 하자 알림**
+#### GENERAL CHARACTERISTICS
+- **Summary**  
+  
+
+- **Scope**  
+  아이루트
+
+- **Level**  
+   
+
+- **Author**  
+  
+
+- **Last Update**  
+  
+
+- **Status**  
+  
+
+- **Primary Actor**  
+  
+
+- **Preconditions**  
+  1. 
+
+- **Trigger**  
+  
+
+- **Success Post Condition**  
+  1.
+- **Failed Post Condition**  
+ 1.  
+
+#### MAIN SUCCESS SCENARIO
+| Step | Action                                                                                                |
+| ---- | ----------------------------------------------------------------------------------------------------- |
+| S    | .                                                                           |
+| 1    |                                                         |
+| 2    |                                                                       |
+| 3    |                                               |
+| 4    |                                          |
+| 5    |                                                |
+| 6    |                                                             |
+| 7    |  |
+| 8    |                                 |
+| 9    |                                                              |
+| 10   |                                                                |
+
+
+
+
+#### EXTENSION SCENARIOS
+| Step | Branching Action                                                                           |
+| ---- | ------------------------------------------------------------------------------------------ |
+| 4a   | |
+| 5a   |                  |
+| 7a   |                            |
+| 7b   |                                   |
+| 8a   |                                                       |
+| 9a   |                           |
+
+
+
+
+#### RELATED INFORMATION
+- **Performance**: 
+- **Frequency**:
+
+
+- **Concurrency**: 
+- **Due Date**: 
+
+---
   ## 3. Class diagram
 ### 유저 관리
 ```mermaid
