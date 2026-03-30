@@ -1303,7 +1303,7 @@ GPS 위치 갱신 정보는 5초 주기로 반영되는 것을 목표로 한다.
 
 ---
   ## 3. Class diagram
-### 유저 관리
+### GPS
 ```mermaid
 classDiagram
     direction LR
@@ -1755,19 +1755,6 @@ classDiagram
 | ---               | ---                                   | ---         | ---             |                  |
 | Method            | updateFcmToken(String fcmToken)       | void        | 보호자의 FCM 토큰을 갱신 |                  |
 
-| Class Name        | StudentEntity                        |               |             |              |
-| ----------------- | ------------------------------------ | ------------- | ----------- | ------------ |
-| Class Description | 통학 차량 추적 및 알림 대상이 되는 학생 정보를 저장하는 엔티티 |               |             |              |
-| 구분                | Name                                 | Type          | Visibility  | Description  |
-| ---               | ---                                  | ---           | ---         | ---          |
-| Attribute         | studentId                            | Long          | Private     | 학생 PK        |
-| Attribute         | name                                 | String        | Private     | 학생 이름        |
-| Attribute         | cardUid                              | String        | Private     | NFC 카드 UID   |
-| Attribute         | scheduledDropTime                    | LocalTime     | Private     | 학생별 하원 예정 시각 |
-| Attribute         | status                               | StudentStatus | Private     | 학생 상태값       |
-| 구분                | Name                                 | Return Type   | Description |              |
-| ---               | ---                                  | ---           | ---         |              |
-| Method            | changeStatus(StudentStatus status)   | void          | 학생 상태 변경    |              |
 
 | Class Name        | StudentEntity                        |               |             |              |
 | ----------------- | ------------------------------------ | ------------- | ----------- | ------------ |
@@ -2009,6 +1996,7 @@ classDiagram
 | Attribute         | stops                           | List<StopSummaryDto> | Private    | 정류장 요약 목록   |
 | Attribute         | vehicleNumber                   | String               | Private    | 차량 번호       |
 | Attribute         | vehicleName                     | String               | Private    | 차량명         |
+
 | Class Name        | StopSummaryDto       |         |            |             |
 | ----------------- | -------------------- | ------- | ---------- | ----------- |
 | Class Description | 정류장 진행 상태 표시용 요약 DTO |         |            |             |
@@ -2142,12 +2130,19 @@ classDiagram
 
 #### Service Class
 
-| Class Name        | NotificationLogRepository                                                               |                                 |                         |
-| ----------------- | --------------------------------------------------------------------------------------- | ------------------------------- | ----------------------- |
-| Class Description | 알림 중복 방지용 최근 이력 조회 Repository                                                           |                                 |                         |
-| 구분                | Name                                                                                    | Return Type                     | Description             |
-| ---               | ---                                                                                     | ---                             | ---                     |
-| Method            | findTopByTypeAndTargetStudentIdOrderBySentAtDesc(NotificationType type, Long studentId) | Optional<NotificationLogEntity> | 동일 학생/유형 기준 최근 발송 이력 조회 |
+| Class Name        | GpsTrackingService                                                             |                            |                                       |                         |
+| ----------------- | ------------------------------------------------------------------------------ | -------------------------- | ------------------------------------- | ----------------------- |
+| Class Description | 차량 실시간 위치 저장 및 학부모 위치 조회 기능을 담당하는 서비스                                          |                            |                                       |                         |
+| 구분                | Name                                                                           | Type                       | Visibility                            | Description             |
+| ---               | ---                                                                            | ---                        | ---                                   | ---                     |
+| Attribute         | gpsRecordRepository                                                            | GpsRecordRepository        | Private / Final                       | GPS 기록 저장/조회 Repository |
+| Attribute         | rideStatusRepository                                                           | RideStatusRepository       | Private / Final                       | 학생 탑승 상태 확인 Repository  |
+| 구분                | Name                                                                           | Return Type                | Description                           |                         |
+| ---               | ---                                                                            | ---                        | ---                                   |                         |
+| Method            | getRealtimeLocation(Long parentId, Long studentId)                             | VehicleLocationResponseDto | 현재 위치 공유 가능 여부를 확인한 뒤 차량의 최신 위치 반환    |                         |
+| Method            | saveGpsRecord(Long vehicleId, Double latitude, Double longitude, Double speed) | void                       | 기사 앱에서 받은 GPS 위치 기록 저장                |                         |
+| Method            | isLocationShareAllowed(Long studentId)                                         | boolean                    | 운행 상태 및 학생 탑승 여부를 기반으로 위치 공유 가능 여부 판단 |                         |
+
 
 | Class Name        | RouteQueryService                           |                      |                                |                  |
 | ----------------- | ------------------------------------------- | -------------------- | ------------------------------ | ---------------- |
@@ -2173,17 +2168,6 @@ classDiagram
 | Method            | calculateStudentEta(Long studentId) | EtaResponseDto       | 학생의 하차 정류장까지 ETA 계산 |                      |
 | Method            | calculateStopEta(Long vehicleId)    | List<EtaResponseDto> | 노선 전체 정류장별 ETA 계산   |                      |
 
-| Class Name        | EtaService                          |                      |                     |                      |
-| ----------------- | ----------------------------------- | -------------------- | ------------------- | -------------------- |
-| Class Description | 학생별 ETA 및 정류장별 ETA 계산을 담당하는 서비스     |                      |                     |                      |
-| 구분                | Name                                | Type                 | Visibility          | Description          |
-| ---               | ---                                 | ---                  | ---                 | ---                  |
-| Attribute         | gpsRecordRepository                 | GpsRecordRepository  | Private / Final     | 최신 GPS 조회 Repository |
-| Attribute         | etaInfoRepository                   | EtaInfoRepository    | Private / Final     | ETA 저장/조회 Repository |
-| 구분                | Name                                | Return Type          | Description         |                      |
-| ---               | ---                                 | ---                  | ---                 |                      |
-| Method            | calculateStudentEta(Long studentId) | EtaResponseDto       | 학생의 하차 정류장까지 ETA 계산 |                      |
-| Method            | calculateStopEta(Long vehicleId)    | List<EtaResponseDto> | 노선 전체 정류장별 ETA 계산   |                      |
 
 | Class Name        | DelayAnalysisService               |                   |                                    |                   |
 | ----------------- | ---------------------------------- | ----------------- | ---------------------------------- | ----------------- |
