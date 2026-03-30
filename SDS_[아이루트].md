@@ -1311,590 +1311,976 @@ classDiagram
     %% =========================
     %% 도메인(Entity)
     %% =========================
-    class UserEntity {
+    class ParentEntity {
         <<entity>>
-        - Long userId
-        - String githubId
-        - boolean isAdmin
-        - Instant createdAt
-        - Instant deletedAt
-        - int commitCount
-        - int issueCount
-        - int prCount
-        + void changeAdmin(boolean isAdmin)
-        + void softDelete()
-        + boolean isDeleted()
-        + void updateStats(int commitCount, int issueCount, int prCount)
+        - Long parentId
+        - String name
+        - String phoneNumber
+        - String fcmToken
+        + void updateFcmToken(String fcmToken)
+    }
+
+    class StudentEntity {
+        <<entity>>
+        - Long studentId
+        - String name
+        - String cardUid
+        - LocalTime scheduledDropTime
+        - StudentStatus status
+        + void changeStatus(StudentStatus status)
+    }
+
+    class DriverEntity {
+        <<entity>>
+        - Long driverId
+        - String name
+        - String phoneNumber
+        + void updatePhoneNumber(String phoneNumber)
+    }
+
+    class VehicleEntity {
+        <<entity>>
+        - Long vehicleId
+        - String vehicleNumber
+        - String vehicleName
+        - Integer capacity
+        - VehicleStatus status
+        + void changeStatus(VehicleStatus status)
+    }
+
+    class RouteEntity {
+        <<entity>>
+        - Long routeId
+        - String routeName
+        - boolean active
+        + void changeActive(boolean active)
+    }
+
+    class StopEntity {
+        <<entity>>
+        - Long stopId
+        - String stopName
+        - Double latitude
+        - Double longitude
+    }
+
+    class RouteStopEntity {
+        <<entity>>
+        - Long routeStopId
+        - Integer stopSequence
+    }
+
+    class StudentRouteAssignmentEntity {
+        <<entity>>
+        - Long assignmentId
+        - LocalTime scheduledDropTime
+        - boolean active
+        + void changeActive(boolean active)
+    }
+
+    class RideSessionEntity {
+        <<entity>>
+        - Long rideSessionId
+        - LocalDate operationDate
+        - RideSessionStatus status
+        - Instant startedAt
+        - Instant endedAt
+        + void startSession()
+        + void endSession()
+    }
+
+    class RideStatusEntity {
+        <<entity>>
+        - Long rideStatusId
+        - Instant boardedAt
+        - Instant droppedAt
+        - RideState state
+        + void markBoarded()
+        + void markDropped()
+    }
+
+    class NfcLogEntity {
+        <<entity>>
+        - Long nfcLogId
+        - String cardUid
+        - Instant taggedAt
+        - NfcEventType eventType
+    }
+
+    class GpsRecordEntity {
+        <<entity>>
+        - Long gpsRecordId
+        - Double latitude
+        - Double longitude
+        - Double speed
+        - Instant recordedAt
+    }
+
+    class RouteProgressEntity {
+        <<entity>>
+        - Long progressId
+        - Integer currentSequence
+        - ProgressStatus progressStatus
+        - Instant updatedAt
+        + void updateProgress(Integer currentSequence, ProgressStatus progressStatus)
+    }
+
+    class EtaInfoEntity {
+        <<entity>>
+        - Long etaId
+        - Instant expectedArrivalTime
+        - Integer remainingMinutes
+        - Integer delayMinutes
+        - boolean delayed
+        + void updateEta(Instant expectedArrivalTime, Integer remainingMinutes, Integer delayMinutes, boolean delayed)
+    }
+
+    class DelayAnalysisEntity {
+        <<entity>>
+        - Long analysisId
+        - DelayReason reason
+        - Integer stopDurationSeconds
+        - boolean trafficCongestion
+        + void updateReason(DelayReason reason)
+    }
+
+    class NotificationEntity {
+        <<entity>>
+        - Long notificationId
+        - NotificationType type
+        - String title
+        - String message
+        - Instant sentAt
+        - NotificationStatus status
+        + void markSent()
+        + void markFailed()
+        + void markBlocked()
+    }
+
+    class NotificationPolicyEntity {
+        <<entity>>
+        - Long policyId
+        - Integer cooldownMinutes
+        - boolean duplicateBlockEnabled
+        + boolean canSend(NotificationType type, Long studentId)
+    }
+
+    class NotificationLogEntity {
+        <<entity>>
+        - Long notificationLogId
+        - NotificationType type
+        - Long targetStudentId
+        - Instant sentAt
+        - boolean success
+        + void record(NotificationType type, Long targetStudentId, boolean success)
     }
 
     %% =========================
     %% DTOs
     %% =========================
-    class AuthTokens {
-        - String accessToken
-        - String refreshToken
+    class VehicleLocationResponseDto {
+        - Long vehicleId
+        - Double latitude
+        - Double longitude
+        - Instant recordedAt
+        - String sharingStatus
     }
 
-    class GithubAuthDto {
-        - String code
-        - String state
-        - String accessToken
+    class RouteInfoResponseDto {
+        - Long routeId
+        - String routeName
+        - List~StopSummaryDto~ stops
+        - String vehicleNumber
+        - String vehicleName
     }
 
-    class GithubProfileDto {
-        - Long id
-        - String login
-        - String avatarUrl
-        - String bio
-        - String email
+    class StopSummaryDto {
+        - Long stopId
+        - String stopName
+        - Integer stopSequence
+        - String progressStatus
     }
 
-    class UserLoginDto {
-        - String email
-        - String password
+    class EtaResponseDto {
+        - Long studentId
+        - Instant expectedArrivalTime
+        - Integer remainingMinutes
+        - Integer delayMinutes
+        - boolean delayed
+        - String delayReason
     }
 
-    class UserRegisterDto {
-        - String email
-        - String password
-        - String nickname
-        - String bio
+    class NotificationResponseDto {
+        - Long notificationId
+        - String type
+        - String title
+        - String message
+        - Instant sentAt
+        - String status
     }
 
-    class UserResponseDto {
-        - Long userId
-        - String githubId
-        - boolean admin
-        - int commitCount
-        - int issueCount
-        - int prCount
-        - Instant createdAt
-        - Instant deletedAt
-        + static UserResponseDto from(UserEntity user)
+    class DriverVehicleInfoResponseDto {
+        - String driverName
+        - String driverPhoneNumber
+        - String vehicleNumber
+        - String vehicleName
     }
 
-    class UserUpdateDto {
-        - String nickname
-        - String profileImg
-        - String bio
+    class PlannedBoardingStudentDto {
+        - Long studentId
+        - String studentName
+        - String stopName
+        - LocalTime scheduledDropTime
     }
-
-    UserResponseDto --> UserEntity : from()
 
     %% =========================
     %% Repository
     %% =========================
-    class UserRepository {
+    class ParentRepository {
         <<interface>>
-        + Optional~UserEntity~ findByGithubId(String githubId)
-        + boolean existsByGithubId(String githubId)
-        %% JpaRepository 기본 CRUD 상속
+        + Optional~ParentEntity~ findById(Long parentId)
     }
 
-    UserRepository --> UserEntity : manages
-
-    %% =========================
-    %% Security / JWT
-    %% =========================
-    class JwtTokenProvider {
-        - Key key
-        - long accessTokenValidityInMs
-        - long refreshTokenValidityInMs
-        + String generateAccessToken(Long userId, String role)
-        + String generateRefreshToken(Long userId)
-        + boolean validateToken(String token)
-        + Long getUserIdFromToken(String token)
-        + Authentication getAuthentication(String token)
+    class StudentRepository {
+        <<interface>>
+        + Optional~StudentEntity~ findById(Long studentId)
     }
 
-    class CustomJwtUserPrincipal {
-        - Long userId
-        + Long getUserId()
+    class VehicleRepository {
+        <<interface>>
+        + Optional~VehicleEntity~ findById(Long vehicleId)
     }
 
-    JwtTokenProvider --> CustomJwtUserPrincipal : creates
-
-    class JwtAuthenticationFilter {
-        - JwtTokenProvider tokenProvider
-        + void doFilterInternal(req, res, chain)
-        - String resolveToken(req)
+    class RouteRepository {
+        <<interface>>
+        + Optional~RouteEntity~ findById(Long routeId)
     }
 
-    class JwtAuthenticationEntryPoint {
-        + void commence(req, res, ex)
+    class RideSessionRepository {
+        <<interface>>
+        + Optional~RideSessionEntity~ findActiveByVehicleId(Long vehicleId)
     }
 
-    class JwtAccessDeniedHandler {
-        + void handle(req, res, ex)
+    class RideStatusRepository {
+        <<interface>>
+        + Optional~RideStatusEntity~ findByRideSessionIdAndStudentId(Long rideSessionId, Long studentId)
     }
 
-    class CustomUserDetails {
-        - Long userId
-        - String githubId
-        - boolean admin
-        - Collection~GrantedAuthority~ authorities
-        - boolean accountNonLocked
-        - boolean accountNonExpired
-        - boolean credentialsNonExpired
-        - boolean enabled
-        + String getUsername()
-        + String getPassword()
-        + Collection~GrantedAuthority~ getAuthorities()
-        + boolean isAccountNonExpired()
-        + boolean isAccountNonLocked()
-        + boolean isCredentialsNonExpired()
-        + boolean isEnabled()
-        + static CustomUserDetails from(UserEntity user)
+    class GpsRecordRepository {
+        <<interface>>
+        + Optional~GpsRecordEntity~ findTopByVehicleIdOrderByRecordedAtDesc(Long vehicleId)
     }
 
-    class CustomUserDetailsService {
-        - UserRepository userRepository
-        + UserDetails loadUserByUsername(String username)
+    class EtaInfoRepository {
+        <<interface>>
+        + Optional~EtaInfoEntity~ findByRideSessionIdAndStudentId(Long rideSessionId, Long studentId)
     }
 
-    class SecurityConfig {
-        - JwtTokenProvider jwtTokenProvider
-        - JwtAuthenticationEntryPoint authenticationEntryPoint
-        - JwtAccessDeniedHandler accessDeniedHandler
-        + CorsConfigurationSource corsConfigurationSource()
-        + PasswordEncoder passwordEncoder()
-        + SecurityFilterChain filterChain(HttpSecurity http)
+    class NotificationRepository {
+        <<interface>>
+        + NotificationEntity save(NotificationEntity notification)
     }
 
-    class SecurityUtil {
-        + static Long getCurrentUserId()
+    class NotificationLogRepository {
+        <<interface>>
+        + Optional~NotificationLogEntity~ findTopByTypeAndTargetStudentIdOrderBySentAtDesc(NotificationType type, Long studentId)
     }
-
-    JwtAuthenticationFilter --> JwtTokenProvider : uses
-    SecurityConfig --> JwtAuthenticationFilter : registers
-    SecurityConfig --> JwtAuthenticationEntryPoint : uses
-    SecurityConfig --> JwtAccessDeniedHandler : uses
-    CustomUserDetailsService --> UserRepository : uses
-    SecurityUtil --> CustomJwtUserPrincipal : reads principal
 
     %% =========================
     %% Service 계층
     %% =========================
-    class AuthService {
-        - UserRepository userRepository
-        - JwtTokenProvider jwtTokenProvider
-        + AuthTokens issueTokensForUser(UserEntity user)
-        + AuthTokens refresh(String refreshToken)
-        + void logout(Long userId)
+    class GpsTrackingService {
+        - GpsRecordRepository gpsRecordRepository
+        - RideStatusRepository rideStatusRepository
+        + VehicleLocationResponseDto getRealtimeLocation(Long parentId, Long studentId)
+        + void saveGpsRecord(Long vehicleId, Double latitude, Double longitude, Double speed)
+        + boolean isLocationShareAllowed(Long studentId)
     }
 
-    class GithubAuthService {
-        - String clientId
-        - String clientSecret
-        - String redirectUri
-        - UserRepository userRepository
-        - AuthService authService
-        - RestTemplate restTemplate
-        + String buildAuthorizeUrl()
-        + String exchangeCodeForAccessToken(String code)
-        + String fetchGithubLogin(String accessToken)
-        + AuthTokens loginWithGithub(GithubAuthDto dto)
-        - UserEntity createUserFromGithubLogin(String githubLogin)
+    class RouteQueryService {
+        - RouteRepository routeRepository
+        - VehicleRepository vehicleRepository
+        + RouteInfoResponseDto getRouteInfo(Long parentId, Long studentId)
+        + List~StopSummaryDto~ getStopProgress(Long vehicleId)
     }
 
-    class UserService {
-        - UserRepository userRepository
-        + UserResponseDto getMyProfile()
-        + UserResponseDto getByGithubId(String githubId)
-        + void deleteMyAccount()
+    class EtaService {
+        - GpsRecordRepository gpsRecordRepository
+        - EtaInfoRepository etaInfoRepository
+        + EtaResponseDto calculateStudentEta(Long studentId)
+        + List~EtaResponseDto~ calculateStopEta(Long vehicleId)
     }
 
-    AuthService --> UserRepository : uses
-    AuthService --> JwtTokenProvider : uses
+    class DelayAnalysisService {
+        - EtaInfoRepository etaInfoRepository
+        + String analyzeDelayReason(Long studentId)
+        + boolean isTardyRisk(Long studentId)
+        + boolean isAbnormalStop(Long vehicleId)
+        + boolean isRouteDeviation(Long vehicleId)
+    }
 
-    GithubAuthService --> UserRepository : uses
-    GithubAuthService --> AuthService : uses
-    GithubAuthService --> GithubAuthDto : uses
-    GithubAuthService --> AuthTokens : returns
-    GithubAuthService --> UserEntity : creates
+    class NotificationPolicyService {
+        - NotificationLogRepository notificationLogRepository
+        + boolean canSend(NotificationType type, Long studentId)
+    }
 
-    UserService --> UserRepository : uses
-    UserService --> UserResponseDto : returns
-    UserService --> SecurityUtil : uses
+    class NotificationService {
+        - NotificationRepository notificationRepository
+        - NotificationLogRepository notificationLogRepository
+        - NotificationPolicyService notificationPolicyService
+        + NotificationResponseDto sendBoardingAlert(Long studentId)
+        + NotificationResponseDto sendDropoffAlert(Long studentId)
+        + NotificationResponseDto sendTardinessAlert(Long studentId)
+        + NotificationResponseDto sendAbnormalStopAlert(Long vehicleId)
+        + NotificationResponseDto sendRouteDeviationAlert(Long vehicleId)
+    }
+
+    class RideService {
+        - RideStatusRepository rideStatusRepository
+        - RideSessionRepository rideSessionRepository
+        + void processBoarding(Long studentId, String cardUid)
+        + void processDropoff(Long studentId, String cardUid)
+        + List~PlannedBoardingStudentDto~ getPlannedBoardingStudents(Long vehicleId)
+    }
 
     %% =========================
     %% Controller 계층
     %% =========================
-    class AuthController {
-        - GithubAuthService githubAuthService
-        - AuthService authService
-        + ResponseEntity~String~ getGithubAuthorizeUrl()
-        + ResponseEntity~AuthTokens~ githubCallback(String code, String state)
-        + ResponseEntity~AuthTokens~ loginWithGithub(GithubAuthDto dto)
-        + ResponseEntity~AuthTokens~ refresh(Map~String,String~ body)
-        + ResponseEntity~Void~ logout(Map~String,Object~ body)
+    class GpsController {
+        - GpsTrackingService gpsTrackingService
+        - RouteQueryService routeQueryService
+        - EtaService etaService
+        + ResponseEntity~VehicleLocationResponseDto~ getRealtimeLocation(Long studentId)
+        + ResponseEntity~RouteInfoResponseDto~ getRouteInfo(Long studentId)
+        + ResponseEntity~List~StopSummaryDto~~ getStopProgress(Long studentId)
+        + ResponseEntity~EtaResponseDto~ getStudentEta(Long studentId)
+        + ResponseEntity~List~EtaResponseDto~~ getStopEta(Long studentId)
     }
 
-    class GithubAuthController {
-        - GithubAuthService githubAuthService
-        + ResponseEntity~String~ getAuthorizeUrl()
-        + ResponseEntity~AuthTokens~ callback(String code, String state)
-        + ResponseEntity~AuthTokens~ loginWithGithub(GithubAuthDto dto)
+    class NotificationController {
+        - NotificationService notificationService
+        + ResponseEntity~NotificationResponseDto~ sendBoardingAlert(Long studentId)
+        + ResponseEntity~NotificationResponseDto~ sendDropoffAlert(Long studentId)
+        + ResponseEntity~NotificationResponseDto~ sendTardinessAlert(Long studentId)
     }
 
-    class UserController {
-        - UserService userService
-        + ResponseEntity~UserResponseDto~ getMyProfile()
-        + ResponseEntity~UserResponseDto~ getByGithubId(String githubId)
-        + ResponseEntity~Void~ deleteMyAccount()
+    class RideController {
+        - RideService rideService
+        + ResponseEntity~Void~ tagBoarding(Long studentId, String cardUid)
+        + ResponseEntity~Void~ tagDropoff(Long studentId, String cardUid)
+        + ResponseEntity~List~PlannedBoardingStudentDto~~ getPlannedStudents(Long vehicleId)
     }
-
-    AuthController --> GithubAuthService : uses
-    AuthController --> AuthService : uses
-    GithubAuthController --> GithubAuthService : uses
-    UserController --> UserService : uses
 
     %% =========================
-    %% 기타 관계
+    %% 관계
     %% =========================
-    AuthService --> AuthTokens : returns
-    AuthController --> AuthTokens : returns
-    GithubAuthController --> AuthTokens : returns
+    ParentRepository --> ParentEntity : manages
+    StudentRepository --> StudentEntity : manages
+    VehicleRepository --> VehicleEntity : manages
+    RouteRepository --> RouteEntity : manages
+    RideSessionRepository --> RideSessionEntity : manages
+    RideStatusRepository --> RideStatusEntity : manages
+    GpsRecordRepository --> GpsRecordEntity : manages
+    EtaInfoRepository --> EtaInfoEntity : manages
+    NotificationRepository --> NotificationEntity : manages
+    NotificationLogRepository --> NotificationLogEntity : manages
+
+    ParentEntity "1" --> "1..*" StudentEntity : protects
+    DriverEntity "1" --> "1" VehicleEntity : drives
+    VehicleEntity "1" --> "1" RouteEntity : assignedTo
+    RouteEntity "1" --> "1..*" RouteStopEntity : contains
+    RouteStopEntity "*" --> "1" StopEntity : refersTo
+    StudentEntity "1" --> "1" StudentRouteAssignmentEntity : has
+    StudentRouteAssignmentEntity "*" --> "1" RouteEntity : belongsTo
+    StudentRouteAssignmentEntity "*" --> "1" StopEntity : dropStop
+
+    VehicleEntity "1" --> "0..*" RideSessionEntity : operates
+    RideSessionEntity "1" --> "0..*" RideStatusEntity : tracks
+    StudentEntity "1" --> "0..*" RideStatusEntity : has
+    StudentEntity "1" --> "0..*" NfcLogEntity : taggedBy
+    VehicleEntity "1" --> "0..*" GpsRecordEntity : generates
+    RideSessionEntity "1" --> "1" RouteProgressEntity : has
+    StudentEntity "1" --> "0..*" EtaInfoEntity : has
+    EtaInfoEntity "1" --> "0..1" DelayAnalysisEntity : analyzedBy
+    NotificationEntity "1" --> "0..1" NotificationLogEntity : recordedAs
+
+    GpsTrackingService --> GpsRecordRepository : uses
+    GpsTrackingService --> RideStatusRepository : uses
+    GpsTrackingService --> VehicleLocationResponseDto : returns
+
+    RouteQueryService --> RouteRepository : uses
+    RouteQueryService --> VehicleRepository : uses
+    RouteQueryService --> RouteInfoResponseDto : returns
+    RouteQueryService --> StopSummaryDto : returns
+
+    EtaService --> GpsRecordRepository : uses
+    EtaService --> EtaInfoRepository : uses
+    EtaService --> EtaResponseDto : returns
+
+    DelayAnalysisService --> EtaInfoRepository : uses
+
+    NotificationPolicyService --> NotificationLogRepository : uses
+    NotificationService --> NotificationRepository : uses
+    NotificationService --> NotificationLogRepository : uses
+    NotificationService --> NotificationPolicyService : uses
+    NotificationService --> NotificationResponseDto : returns
+
+    RideService --> RideStatusRepository : uses
+    RideService --> RideSessionRepository : uses
+    RideService --> PlannedBoardingStudentDto : returns
+
+    GpsController --> GpsTrackingService : uses
+    GpsController --> RouteQueryService : uses
+    GpsController --> EtaService : uses
+    NotificationController --> NotificationService : uses
+    RideController --> RideService : uses
 
 ```
-<img width="852" height="623" alt="image" src="https://github.com/user-attachments/assets/47cc41aa-e614-4474-9bde-6de8bdcd3d7d" />
+
 
 
 
 #### Entity Class
 
-| Class Name        | UserEntity                         |         |            |
-| ----------------- | ---------------------------------- | ------- | ---------- |
-| Class Description | GitHub 계정 기반 사용자 정보를 저장하고 관리하는 엔티티 |         |            |
-| 구분        | Name        | Type    | Visibility | Description                                   |
-| --------- | ----------- | ------- | ---------- | --------------------------------------------- |
-| Attribute | userId      | Long    | Private    | PK, 자동 증가(`IDENTITY`), ERD: `user_id`         |
-| Attribute | githubId    | String  | Private    | GitHub 로그인 ID, 고유값, ERD: `github_id`          |
-| Attribute | isAdmin     | boolean | Private    | 관리자 여부, ERD: `is_admin`                       |
-| Attribute | createdAt   | Instant | Private    | 생성 시간, 최초 생성 시 자동 세팅, ERD: `created_at`       |
-| Attribute | deletedAt   | Instant | Private    | 소프트 삭제 시간, 삭제되지 않은 경우 null, ERD: `deleted_at` |
-| Attribute | commitCount | int     | Private    | 커밋 횟수, ERD: `commit_count`                    |
-| Attribute | issueCount  | int     | Private    | 이슈 개수, ERD: `issue_count`                     |
-| Attribute | prCount     | int     | Private    | PR 개수, ERD: `pr_count`                        |
-| 구분       | Name       | Description                                   |
-| -------- | ---------- | --------------------------------------------- |
-| Callback | onCreate() | `@PrePersist` — createdAt 자동 세팅 및 통계 필드 0 초기화 |
-| 구분     | Name                                                      | Return Type | Description                      |
-| ------ | --------------------------------------------------------- | ----------- | -------------------------------- |
-| Method | changeAdmin(boolean isAdmin)                              | void        | 사용자의 관리자 여부 변경                   |
-| Method | softDelete()                                              | void        | 현재 시간을 deletedAt에 기록하여 소프트 삭제 처리 |
-| Method | isDeleted()                                               | boolean     | deletedAt이 null이 아니면 탈퇴한 사용자로 판단 |
-| Method | updateStats(int commitCount, int issueCount, int prCount) | void        | GitHub 통계 일괄 업데이트                |
+| Class Name        | ParentEntity                          |             |                 |                  |
+| ----------------- | ------------------------------------- | ----------- | --------------- | ---------------- |
+| Class Description | 학생 보호자 정보를 저장하고 푸시 알림 수신 정보를 관리하는 엔티티 |             |                 |                  |
+| 구분                | Name                                  | Type        | Visibility      | Description      |
+| ---               | ---                                   | ---         | ---             | ---              |
+| Attribute         | parentId                              | Long        | Private         | 보호자 PK           |
+| Attribute         | name                                  | String      | Private         | 보호자 이름           |
+| Attribute         | phoneNumber                           | String      | Private         | 보호자 연락처          |
+| Attribute         | fcmToken                              | String      | Private         | 푸시 알림 수신용 FCM 토큰 |
+| 구분                | Name                                  | Return Type | Description     |                  |
+| ---               | ---                                   | ---         | ---             |                  |
+| Method            | updateFcmToken(String fcmToken)       | void        | 보호자의 FCM 토큰을 갱신 |                  |
+
+| Class Name        | StudentEntity                        |               |             |              |
+| ----------------- | ------------------------------------ | ------------- | ----------- | ------------ |
+| Class Description | 통학 차량 추적 및 알림 대상이 되는 학생 정보를 저장하는 엔티티 |               |             |              |
+| 구분                | Name                                 | Type          | Visibility  | Description  |
+| ---               | ---                                  | ---           | ---         | ---          |
+| Attribute         | studentId                            | Long          | Private     | 학생 PK        |
+| Attribute         | name                                 | String        | Private     | 학생 이름        |
+| Attribute         | cardUid                              | String        | Private     | NFC 카드 UID   |
+| Attribute         | scheduledDropTime                    | LocalTime     | Private     | 학생별 하원 예정 시각 |
+| Attribute         | status                               | StudentStatus | Private     | 학생 상태값       |
+| 구분                | Name                                 | Return Type   | Description |              |
+| ---               | ---                                  | ---           | ---         |              |
+| Method            | changeStatus(StudentStatus status)   | void          | 학생 상태 변경    |              |
+
+| Class Name        | StudentEntity                        |               |             |              |
+| ----------------- | ------------------------------------ | ------------- | ----------- | ------------ |
+| Class Description | 통학 차량 추적 및 알림 대상이 되는 학생 정보를 저장하는 엔티티 |               |             |              |
+| 구분                | Name                                 | Type          | Visibility  | Description  |
+| ---               | ---                                  | ---           | ---         | ---          |
+| Attribute         | studentId                            | Long          | Private     | 학생 PK        |
+| Attribute         | name                                 | String        | Private     | 학생 이름        |
+| Attribute         | cardUid                              | String        | Private     | NFC 카드 UID   |
+| Attribute         | scheduledDropTime                    | LocalTime     | Private     | 학생별 하원 예정 시각 |
+| Attribute         | status                               | StudentStatus | Private     | 학생 상태값       |
+| 구분                | Name                                 | Return Type   | Description |              |
+| ---               | ---                                  | ---           | ---         |              |
+| Method            | changeStatus(StudentStatus status)   | void          | 학생 상태 변경    |              |
+
+| Class Name        | DriverEntity                          |             |             |             |
+| ----------------- | ------------------------------------- | ----------- | ----------- | ----------- |
+| Class Description | 차량 운행을 담당하는 기사 정보를 저장하는 엔티티           |             |             |             |
+| 구분                | Name                                  | Type        | Visibility  | Description |
+| ---               | ---                                   | ---         | ---         | ---         |
+| Attribute         | driverId                              | Long        | Private     | 기사 PK       |
+| Attribute         | name                                  | String      | Private     | 기사 이름       |
+| Attribute         | phoneNumber                           | String      | Private     | 기사 연락처      |
+| 구분                | Name                                  | Return Type | Description |             |
+| ---               | ---                                   | ---         | ---         |             |
+| Method            | updatePhoneNumber(String phoneNumber) | void        | 기사 연락처 수정   |             |
+
+| Class Name        | VehicleEntity                      |               |             |             |
+| ----------------- | ---------------------------------- | ------------- | ----------- | ----------- |
+| Class Description | 통학 차량의 식별 정보 및 운행 상태를 저장하는 엔티티     |               |             |             |
+| 구분                | Name                               | Type          | Visibility  | Description |
+| ---               | ---                                | ---           | ---         | ---         |
+| Attribute         | vehicleId                          | Long          | Private     | 차량 PK       |
+| Attribute         | vehicleNumber                      | String        | Private     | 차량 번호       |
+| Attribute         | vehicleName                        | String        | Private     | 차량명 또는 호차   |
+| Attribute         | capacity                           | Integer       | Private     | 차량 정원       |
+| Attribute         | status                             | VehicleStatus | Private     | 차량 운행 상태    |
+| 구분                | Name                               | Return Type   | Description |             |
+| ---               | ---                                | ---           | ---         |             |
+| Method            | changeStatus(VehicleStatus status) | void          | 차량 상태 변경    |             |
+
+| Class Name        | RouteEntity                  |             |             |             |
+| ----------------- | ---------------------------- | ----------- | ----------- | ----------- |
+| Class Description | 차량의 고정 노선 정보를 저장하는 엔티티       |             |             |             |
+| 구분                | Name                         | Type        | Visibility  | Description |
+| ---               | ---                          | ---         | ---         | ---         |
+| Attribute         | routeId                      | Long        | Private     | 노선 PK       |
+| Attribute         | routeName                    | String      | Private     | 노선 이름       |
+| Attribute         | active                       | boolean     | Private     | 노선 활성화 여부   |
+| 구분                | Name                         | Return Type | Description |             |
+| ---               | ---                          | ---         | ---         |             |
+| Method            | changeActive(boolean active) | void        | 노선 활성 상태 변경 |             |
+
+| Class Name        | StopEntity                   |        |            |             |
+| ----------------- | ---------------------------- | ------ | ---------- | ----------- |
+| Class Description | 노선에 포함되는 개별 정류장 정보를 저장하는 엔티티 |        |            |             |
+| 구분                | Name                         | Type   | Visibility | Description |
+| ---               | ---                          | ---    | ---        | ---         |
+| Attribute         | stopId                       | Long   | Private    | 정류장 PK      |
+| Attribute         | stopName                     | String | Private    | 정류장 이름      |
+| Attribute         | latitude                     | Double | Private    | 정류장 위도      |
+| Attribute         | longitude                    | Double | Private    | 정류장 경도      |
+
+| Class Name        | RouteStopEntity          |         |            |              |
+| ----------------- | ------------------------ | ------- | ---------- | ------------ |
+| Class Description | 노선 내 정류장 순서를 관리하는 매핑 엔티티 |         |            |              |
+| 구분                | Name                     | Type    | Visibility | Description  |
+| ---               | ---                      | ---     | ---        | ---          |
+| Attribute         | routeStopId              | Long    | Private    | 노선-정류장 매핑 PK |
+| Attribute         | stopSequence             | Integer | Private    | 노선 내 정류장 순서  |
+
+| Class Name        | StudentRouteAssignmentEntity       |             |                |              |
+| ----------------- | ---------------------------------- | ----------- | -------------- | ------------ |
+| Class Description | 학생과 노선, 하차 정류장, 예정 시각을 연결하는 매핑 엔티티 |             |                |              |
+| 구분                | Name                               | Type        | Visibility     | Description  |
+| ---               | ---                                | ---         | ---            | ---          |
+| Attribute         | assignmentId                       | Long        | Private        | 학생-노선 배정 PK  |
+| Attribute         | scheduledDropTime                  | LocalTime   | Private        | 학생별 하차 예정 시각 |
+| Attribute         | active                             | boolean     | Private        | 배정 활성화 여부    |
+| 구분                | Name                               | Return Type | Description    |              |
+| ---               | ---                                | ---         | ---            |              |
+| Method            | changeActive(boolean active)       | void        | 학생 배정 활성 상태 변경 |              |
+
+| Class Name        | RideSessionEntity         |                   |             |             |
+| ----------------- | ------------------------- | ----------------- | ----------- | ----------- |
+| Class Description | 날짜별 차량 운행 세션 정보를 저장하는 엔티티 |                   |             |             |
+| 구분                | Name                      | Type              | Visibility  | Description |
+| ---               | ---                       | ---               | ---         | ---         |
+| Attribute         | rideSessionId             | Long              | Private     | 운행 세션 PK    |
+| Attribute         | operationDate             | LocalDate         | Private     | 운행 일자       |
+| Attribute         | status                    | RideSessionStatus | Private     | 운행 상태       |
+| Attribute         | startedAt                 | Instant           | Private     | 운행 시작 시각    |
+| Attribute         | endedAt                   | Instant           | Private     | 운행 종료 시각    |
+| 구분                | Name                      | Return Type       | Description |             |
+| ---               | ---                       | ---               | ---         |             |
+| Method            | startSession()            | void              | 운행 시작 처리    |             |
+| Method            | endSession()              | void              | 운행 종료 처리    |             |
+
+| Class Name        | RideStatusEntity               |             |             |             |
+| ----------------- | ------------------------------ | ----------- | ----------- | ----------- |
+| Class Description | 운행 세션 내 학생별 탑승/하차 상태를 관리하는 엔티티 |             |             |             |
+| 구분                | Name                           | Type        | Visibility  | Description |
+| ---               | ---                            | ---         | ---         | ---         |
+| Attribute         | rideStatusId                   | Long        | Private     | 운행 상태 PK    |
+| Attribute         | boardedAt                      | Instant     | Private     | 탑승 시각       |
+| Attribute         | droppedAt                      | Instant     | Private     | 하차 시각       |
+| Attribute         | state                          | RideState   | Private     | 학생 탑승 상태    |
+| 구분                | Name                           | Return Type | Description |             |
+| ---               | ---                            | ---         | ---         |             |
+| Method            | markBoarded()                  | void        | 탑승 상태로 변경   |             |
+| Method            | markDropped()                  | void        | 하차 상태로 변경   |             |
+
+| Class Name        | NfcLogEntity               |              |            |              |
+| ----------------- | -------------------------- | ------------ | ---------- | ------------ |
+| Class Description | 학생의 NFC 태그 이력을 저장하는 로그 엔티티 |              |            |              |
+| 구분                | Name                       | Type         | Visibility | Description  |
+| ---               | ---                        | ---          | ---        | ---          |
+| Attribute         | nfcLogId                   | Long         | Private    | NFC 로그 PK    |
+| Attribute         | cardUid                    | String       | Private    | 태깅된 카드 UID   |
+| Attribute         | taggedAt                   | Instant      | Private    | 태깅 시각        |
+| Attribute         | eventType                  | NfcEventType | Private    | 탑승/하차 이벤트 구분 |
+
+| Class Name        | GpsRecordEntity                         |         |            |             |
+| ----------------- | --------------------------------------- | ------- | ---------- | ----------- |
+| Class Description | 기사 앱에서 주기적으로 전송한 차량 GPS 위치 기록을 저장하는 엔티티 |         |            |             |
+| 구분                | Name                                    | Type    | Visibility | Description |
+| ---               | ---                                     | ---     | ---        | ---         |
+| Attribute         | gpsRecordId                             | Long    | Private    | GPS 기록 PK   |
+| Attribute         | latitude                                | Double  | Private    | 차량 위도       |
+| Attribute         | longitude                               | Double  | Private    | 차량 경도       |
+| Attribute         | speed                                   | Double  | Private    | 차량 속도       |
+| Attribute         | recordedAt                              | Instant | Private    | 위치 기록 시각    |
+
+| Class Name        | RouteProgressEntity                                                    |                |              |              |
+| ----------------- | ---------------------------------------------------------------------- | -------------- | ------------ | ------------ |
+| Class Description | 현재 차량이 노선의 어느 정류장 구간을 통과 중인지 저장하는 엔티티                                  |                |              |              |
+| 구분                | Name                                                                   | Type           | Visibility   | Description  |
+| ---               | ---                                                                    | ---            | ---          | ---          |
+| Attribute         | progressId                                                             | Long           | Private      | 진행 상태 PK     |
+| Attribute         | currentSequence                                                        | Integer        | Private      | 현재 기준 정류장 순서 |
+| Attribute         | progressStatus                                                         | ProgressStatus | Private      | 진행 상태        |
+| Attribute         | updatedAt                                                              | Instant        | Private      | 마지막 갱신 시각    |
+| 구분                | Name                                                                   | Return Type    | Description  |              |
+| ---               | ---                                                                    | ---            | ---          |              |
+| Method            | updateProgress(Integer currentSequence, ProgressStatus progressStatus) | void           | 정류장 진행 상태 갱신 |              |
+
+| Class Name        | EtaInfoEntity                                                                                           |             |             |             |
+| ----------------- | ------------------------------------------------------------------------------------------------------- | ----------- | ----------- | ----------- |
+| Class Description | 학생별 또는 정류장별 예상 도착 시간 정보를 저장하는 엔티티                                                                       |             |             |             |
+| 구분                | Name                                                                                                    | Type        | Visibility  | Description |
+| ---               | ---                                                                                                     | ---         | ---         | ---         |
+| Attribute         | etaId                                                                                                   | Long        | Private     | ETA 정보 PK   |
+| Attribute         | expectedArrivalTime                                                                                     | Instant     | Private     | 예상 도착 시각    |
+| Attribute         | remainingMinutes                                                                                        | Integer     | Private     | 남은 예상 시간(분) |
+| Attribute         | delayMinutes                                                                                            | Integer     | Private     | 지연 예상 시간(분) |
+| Attribute         | delayed                                                                                                 | boolean     | Private     | 지연 여부       |
+| 구분                | Name                                                                                                    | Return Type | Description |             |
+| ---               | ---                                                                                                     | ---         | ---         |             |
+| Method            | updateEta(Instant expectedArrivalTime, Integer remainingMinutes, Integer delayMinutes, boolean delayed) | void        | ETA 정보 갱신   |             |
+
+| Class Name        | DelayAnalysisEntity              |             |             |              |
+| ----------------- | -------------------------------- | ----------- | ----------- | ------------ |
+| Class Description | 지연 원인 분석 결과를 저장하는 엔티티            |             |             |              |
+| 구분                | Name                             | Type        | Visibility  | Description  |
+| ---               | ---                              | ---         | ---         | ---          |
+| Attribute         | analysisId                       | Long        | Private     | 지연 분석 PK     |
+| Attribute         | reason                           | DelayReason | Private     | 지연 원인 분류     |
+| Attribute         | stopDurationSeconds              | Integer     | Private     | 장시간 정차 시간(초) |
+| Attribute         | trafficCongestion                | boolean     | Private     | 교통 혼잡 여부     |
+| 구분                | Name                             | Return Type | Description |              |
+| ---               | ---                              | ---         | ---         |              |
+| Method            | updateReason(DelayReason reason) | void        | 지연 원인 갱신    |              |
+
+| Class Name        | NotificationEntity            |                    |                 |             |
+| ----------------- | ----------------------------- | ------------------ | --------------- | ----------- |
+| Class Description | 학부모에게 발송되는 푸시 알림 정보를 저장하는 엔티티 |                    |                 |             |
+| 구분                | Name                          | Type               | Visibility      | Description |
+| ---               | ---                           | ---                | ---             | ---         |
+| Attribute         | notificationId                | Long               | Private         | 알림 PK       |
+| Attribute         | type                          | NotificationType   | Private         | 알림 유형       |
+| Attribute         | title                         | String             | Private         | 알림 제목       |
+| Attribute         | message                       | String             | Private         | 알림 본문       |
+| Attribute         | sentAt                        | Instant            | Private         | 발송 시각       |
+| Attribute         | status                        | NotificationStatus | Private         | 발송 상태       |
+| 구분                | Name                          | Return Type        | Description     |             |
+| ---               | ---                           | ---                | ---             |             |
+| Method            | markSent()                    | void               | 알림 발송 성공 처리     |             |
+| Method            | markFailed()                  | void               | 알림 발송 실패 처리     |             |
+| Method            | markBlocked()                 | void               | 중복 정책에 의해 차단 처리 |             |
+
+| Class Name        | NotificationPolicyEntity                       |             |                            |                    |
+| ----------------- | ---------------------------------------------- | ----------- | -------------------------- | ------------------ |
+| Class Description | 알림 중복 방지 및 쿨다운 정책을 관리하는 엔티티                    |             |                            |                    |
+| 구분                | Name                                           | Type        | Visibility                 | Description        |
+| ---               | ---                                            | ---         | ---                        | ---                |
+| Attribute         | policyId                                       | Long        | Private                    | 정책 PK              |
+| Attribute         | cooldownMinutes                                | Integer     | Private                    | 동일 알림 재전송 제한 시간(분) |
+| Attribute         | duplicateBlockEnabled                          | boolean     | Private                    | 중복 차단 기능 사용 여부     |
+| 구분                | Name                                           | Return Type | Description                |                    |
+| ---               | ---                                            | ---         | ---                        |                    |
+| Method            | canSend(NotificationType type, Long studentId) | boolean     | 동일 학생/동일 유형 알림 발송 가능 여부 판단 |                    |
+
+| Class Name        | NotificationLogEntity                                                |                  |             |             |
+| ----------------- | -------------------------------------------------------------------- | ---------------- | ----------- | ----------- |
+| Class Description | 알림 발송 이력을 저장하여 중복 방지 정책에 활용하는 로그 엔티티                                 |                  |             |             |
+| 구분                | Name                                                                 | Type             | Visibility  | Description |
+| ---               | ---                                                                  | ---              | ---         | ---         |
+| Attribute         | notificationLogId                                                    | Long             | Private     | 알림 로그 PK    |
+| Attribute         | type                                                                 | NotificationType | Private     | 발송 알림 유형    |
+| Attribute         | targetStudentId                                                      | Long             | Private     | 알림 대상 학생 ID |
+| Attribute         | sentAt                                                               | Instant          | Private     | 발송 시각       |
+| Attribute         | success                                                              | boolean          | Private     | 발송 성공 여부    |
+| 구분                | Name                                                                 | Return Type      | Description |             |
+| ---               | ---                                                                  | ---              | ---         |             |
+| Method            | record(NotificationType type, Long targetStudentId, boolean success) | void             | 알림 발송 이력 기록 |             |
 
 
 
 #### DTO Class
 
-| Class Name        | AuthTokens                             |        |            |
-| ----------------- | ----------------------------------------- | ------ | ---------- |
-| Class Description | 인증 후 발급되는 Access Token / Refresh Token 묶음 DTO |        |            |
-| 구분        | Name         | Type   | Visibility | Description                        |
-| --------- | ------------ | ------ | ---------- | ---------------------------------- |
-| Attribute | accessToken  | String | Private    | 클라이언트 요청에 사용되는 JWT Access Token    |
-| Attribute | refreshToken | String | Private    | Access Token 갱신용 JWT Refresh Token |
+| Class Name        | VehicleLocationResponseDto  |         |            |             |
+| ----------------- | --------------------------- | ------- | ---------- | ----------- |
+| Class Description | 학부모에게 현재 차량 위치를 반환하는 응답 DTO |         |            |             |
+| 구분                | Name                        | Type    | Visibility | Description |
+| ---               | ---                         | ---     | ---        | ---         |
+| Attribute         | vehicleId                   | Long    | Private    | 차량 PK       |
+| Attribute         | latitude                    | Double  | Private    | 차량 위도       |
+| Attribute         | longitude                   | Double  | Private    | 차량 경도       |
+| Attribute         | recordedAt                  | Instant | Private    | 위치 수신 시각    |
+| Attribute         | sharingStatus               | String  | Private    | 위치 공유 가능 상태 |
 
+| Class Name        | RouteInfoResponseDto            |                      |            |             |
+| ----------------- | ------------------------------- | -------------------- | ---------- | ----------- |
+| Class Description | 차량의 노선 및 정류장 목록 정보를 반환하는 응답 DTO |                      |            |             |
+| 구분                | Name                            | Type                 | Visibility | Description |
+| ---               | ---                             | ---                  | ---        | ---         |
+| Attribute         | routeId                         | Long                 | Private    | 노선 PK       |
+| Attribute         | routeName                       | String               | Private    | 노선명         |
+| Attribute         | stops                           | List<StopSummaryDto> | Private    | 정류장 요약 목록   |
+| Attribute         | vehicleNumber                   | String               | Private    | 차량 번호       |
+| Attribute         | vehicleName                     | String               | Private    | 차량명         |
+| Class Name        | StopSummaryDto       |         |            |             |
+| ----------------- | -------------------- | ------- | ---------- | ----------- |
+| Class Description | 정류장 진행 상태 표시용 요약 DTO |         |            |             |
+| 구분                | Name                 | Type    | Visibility | Description |
+| ---               | ---                  | ---     | ---        | ---         |
+| Attribute         | stopId               | Long    | Private    | 정류장 PK      |
+| Attribute         | stopName             | String  | Private    | 정류장명        |
+| Attribute         | stopSequence         | Integer | Private    | 정류장 순서      |
+| Attribute         | progressStatus       | String  | Private    | 정류장 진행 상태   |
 
-| Class Name        | GithubAuthDto                             |        |            |
-| ----------------- | ----------------------------------------- | ------ | ---------- |
-| Class Description | 깃허브 OAuth 인증 시 전달되는 인증 코드 및 상태 정보를 담는 DTO |        |            |
-| 구분        | Name        | Type   | Visibility | Description                          |
-| --------- | ----------- | ------ | ---------- | ------------------------------------ |
-| Attribute | code        | String | Private    | GitHub 인증 과정에서 받은 authorization code |
-| Attribute | state       | String | Private    | CSRF 방지용 state 값                     |
-| Attribute | accessToken | String | Private    | GitHub에서 발급한 OAuth Access Token      |
+| Class Name        | EtaResponseDto                  |         |            |             |
+| ----------------- | ------------------------------- | ------- | ---------- | ----------- |
+| Class Description | 학생별 또는 정류장별 ETA 정보를 반환하는 응답 DTO |         |            |             |
+| 구분                | Name                            | Type    | Visibility | Description |
+| ---               | ---                             | ---     | ---        | ---         |
+| Attribute         | studentId                       | Long    | Private    | 학생 PK       |
+| Attribute         | expectedArrivalTime             | Instant | Private    | 예상 도착 시각    |
+| Attribute         | remainingMinutes                | Integer | Private    | 남은 예상 시간    |
+| Attribute         | delayMinutes                    | Integer | Private    | 지연 예상 시간    |
+| Attribute         | delayed                         | boolean | Private    | 지연 여부       |
+| Attribute         | delayReason                     | String  | Private    | 지연 원인 표시 문구 |
 
+| Class Name        | NotificationResponseDto |         |            |             |
+| ----------------- | ----------------------- | ------- | ---------- | ----------- |
+| Class Description | 알림 발송 결과를 반환하는 응답 DTO   |         |            |             |
+| 구분                | Name                    | Type    | Visibility | Description |
+| ---               | ---                     | ---     | ---        | ---         |
+| Attribute         | notificationId          | Long    | Private    | 알림 PK       |
+| Attribute         | type                    | String  | Private    | 알림 유형       |
+| Attribute         | title                   | String  | Private    | 알림 제목       |
+| Attribute         | message                 | String  | Private    | 알림 본문       |
+| Attribute         | sentAt                  | Instant | Private    | 알림 발송 시각    |
+| Attribute         | status                  | String  | Private    | 알림 처리 결과    |
 
+| Class Name        | DriverVehicleInfoResponseDto  |        |            |             |
+| ----------------- | ----------------------------- | ------ | ---------- | ----------- |
+| Class Description | 학부모에게 차량 및 기사 정보를 반환하는 응답 DTO |        |            |             |
+| 구분                | Name                          | Type   | Visibility | Description |
+| ---               | ---                           | ---    | ---        | ---         |
+| Attribute         | driverName                    | String | Private    | 기사 이름       |
+| Attribute         | driverPhoneNumber             | String | Private    | 기사 연락처      |
+| Attribute         | vehicleNumber                 | String | Private    | 차량 번호       |
+| Attribute         | vehicleName                   | String | Private    | 차량명         |
 
-| Class Name        | GithubProfileDto              |         |            |
-| ----------------- | ----------------------------- | ------- | ---------- |
-| Class Description | GitHub 사용자 프로필 정보를 담는 DTO |         |            |
-| 구분        | Name      | Type   | Visibility | Description                |
-| --------- | --------- | ------ | ---------- | -------------------------- |
-| Attribute | id        | Long   | Private    | GitHub numeric id (고유 번호)  |
-| Attribute | login     | String | Private    | GitHub username (로그인 ID)   |
-| Attribute | avatarUrl | String | Private    | GitHub 프로필 이미지 URL         |
-| Attribute | bio       | String | Private    | GitHub 프로필 소개 문구           |
-| Attribute | email     | String | Private    | GitHub 이메일 (비공개 시 null 가능) |
+| Class Name        | PlannedBoardingStudentDto   |           |            |             |
+| ----------------- | --------------------------- | --------- | ---------- | ----------- |
+| Class Description | 기사 앱에서 조회하는 탑승 예정 학생 정보 DTO |           |            |             |
+| 구분                | Name                        | Type      | Visibility | Description |
+| ---               | ---                         | ---       | ---        | ---         |
+| Attribute         | studentId                   | Long      | Private    | 학생 PK       |
+| Attribute         | studentName                 | String    | Private    | 학생 이름       |
+| Attribute         | stopName                    | String    | Private    | 하차 예정 정류장명  |
+| Attribute         | scheduledDropTime           | LocalTime | Private    | 예정 하차 시각    |
 
-
-
-| Class Name        | UserLoginDto                           |        |            |
-| ----------------- | ------------------------------------- | ------ | ---------- |
-| Class Description | 일반 이메일/비밀번호 기반 로그인 요청 DTO |        |            |
-| 구분        | Name     | Type   | Visibility | Description               |
-| --------- | -------- | ------ | ---------- | ------------------------- |
-| Attribute | email    | String | Private    | 사용자 로그인 이메일               |
-| Attribute | password | String | Private    | 사용자 비밀번호(평문, 서버에서 암호화 처리) |
-
-| Class Name        | UserRegisterDto                           |        |            |
-| ----------------- | ------------------------------------- | ------ | ---------- |
-| Class Description | 일반 이메일/비밀번호 기반 로그인 요청 DTO |        |            |
-| 구분        | Name     | Type   | Visibility | Description            |
-| --------- | -------- | ------ | ---------- | ---------------------- |
-| Attribute | email    | String | Private    | 회원가입 이메일(로그인 ID)       |
-| Attribute | password | String | Private    | 회원 비밀번호(저장 전 해시 처리 예정) |
-| Attribute | nickname | String | Private    | 서비스 내에서 사용할 닉네임        |
-| Attribute | bio      | String | Private    | 한 줄 소개 / 자기소개          |
-
-
-| Class Name        | UserResponseDto                           |        |            |
-| ----------------- | ------------------------------------- | ------ | ---------- |
-| Class Description | 클라이언트로 반환하는 사용자 정보 응답 DTO |        |            |
-| 구분        | Name        | Type    | Visibility | Description              |
-| --------- | ----------- | ------- | ---------- | ------------------------ |
-| Attribute | userId      | Long    | Private    | 사용자 PK                   |
-| Attribute | githubId    | String  | Private    | 사용자 GitHub ID (연동 계정)    |
-| Attribute | admin       | boolean | Private    | 관리자 여부                   |
-| Attribute | commitCount | int     | Private    | 누적 커밋 수                  |
-| Attribute | issueCount  | int     | Private    | 누적 이슈 개수                 |
-| Attribute | prCount     | int     | Private    | 누적 PR 개수                 |
-| Attribute | createdAt   | Instant | Private    | 계정 생성 시각                 |
-| Attribute | deletedAt   | Instant | Private    | 계정 삭제(탈퇴) 시각, 미탈퇴 시 null |
-| 구분     | Name                  | Return Type     | Description                              |
-| ------ | --------------------- | --------------- | ---------------------------------------- |
-| Method | from(UserEntity user) | UserResponseDto | UserEntity를 기반으로 응답 DTO로 변환하는 정적 팩토리 메서드 |
-
-| Class Name        | UserUpdateDto                           |        |            |
-| ----------------- | ------------------------------------- | ------ | ---------- |
-| Class Description | 마이페이지 등에서 사용자 프로필 수정 요청에 사용하는 DTO |        |            |
-| 구분        | Name       | Type   | Visibility | Description     |
-| --------- | ---------- | ------ | ---------- | --------------- |
-| Attribute | nickname   | String | Private    | 변경할 닉네임         |
-| Attribute | profileImg | String | Private    | 변경할 프로필 이미지 URL |
-| Attribute | bio        | String | Private    | 변경할 자기소개/한 줄 소개 |
 
 
 
 #### Repository Class
 
-| Class Name        | UserRepository                                           |                      |            |
-| ----------------- | -------------------------------------------------------- | -------------------- | ---------- |
-| Class Description | UserEntity에 대한 CRUD 및 사용자 검색용 JPA Repository |                      |            |
-| 구분     | Name                              | Return Type          | Description        |
-| ------ | --------------------------------- | -------------------- | ------------------ |
-| Method | findByGithubId(String githubId)   | Optional<UserEntity> | github_id로 사용자 조회  |
-| Method | existsByGithubId(String githubId) | boolean              | github_id 존재 여부 확인 |
+| Class Name        | ParentRepository                    |                        |             |
+| ----------------- | ----------------------------------- | ---------------------- | ----------- |
+| Class Description | ParentEntity에 대한 조회용 JPA Repository |                        |             |
+| 구분                | Name                                | Return Type            | Description |
+| ---               | ---                                 | ---                    | ---         |
+| Method            | findById(Long parentId)             | Optional<ParentEntity> | 보호자 ID로 조회  |
 
+| Class Name        | StudentRepository                    |                         |             |
+| ----------------- | ------------------------------------ | ----------------------- | ----------- |
+| Class Description | StudentEntity에 대한 조회용 JPA Repository |                         |             |
+| 구분                | Name                                 | Return Type             | Description |
+| ---               | ---                                  | ---                     | ---         |
+| Method            | findById(Long studentId)             | Optional<StudentEntity> | 학생 ID로 조회   |
 
-#### Security Class
+| Class Name        | VehicleRepository                    |                         |             |
+| ----------------- | ------------------------------------ | ----------------------- | ----------- |
+| Class Description | VehicleEntity에 대한 조회용 JPA Repository |                         |             |
+| 구분                | Name                                 | Return Type             | Description |
+| ---               | ---                                  | ---                     | ---         |
+| Method            | findById(Long vehicleId)             | Optional<VehicleEntity> | 차량 ID로 조회   |
 
-| Class Name        | JwtTokenProvider                          |        |            |
-| ----------------- | ----------------------------------------- | ------ | ---------- |
-| Class Description | JWT Access/Refresh 토큰 생성·검증·파싱 담당         |        |            |
-| 구분        | Name                     | Type | Visibility | Description      |
-| --------- | ------------------------ | ---- | ---------- | ---------------- |
-| Attribute | key                      | Key  | Private    | 서명 검증용 Key 객체    |
-| Attribute | accessTokenValidityInMs  | long | Private    | 액세스토큰 유효 시간(ms)  |
-| Attribute | refreshTokenValidityInMs | long | Private    | 리프레시토큰 유효 시간(ms) |
-| 구분     | Name                                          | Return Type    | Description                            |
-| ------ | --------------------------------------------- | -------------- | ---------------------------------------- |
-| Method | generateAccessToken(Long userId, String role) | String         | Access Token 생성                          |
-| Method | generateRefreshToken(Long userId)             | String         | Refresh Token 생성                         |
-| Method | validateToken(String token)                   | boolean        | JWT 서명 및 만료 검증                           |
-| Method | getUserIdFromToken(String token)              | Long           | JWT Payload에서 userId(subject) 추출         |
-| Method | getAuthentication(String token)               | Authentication | SecurityContext에 넣을 Authentication 객체 생성 |
+| Class Name        | RouteRepository                    |                       |             |
+| ----------------- | ---------------------------------- | --------------------- | ----------- |
+| Class Description | RouteEntity에 대한 조회용 JPA Repository |                       |             |
+| 구분                | Name                               | Return Type           | Description |
+| ---               | ---                                | ---                   | ---         |
+| Method            | findById(Long routeId)             | Optional<RouteEntity> | 노선 ID로 조회   |
 
+| Class Name        | RideSessionRepository                 |                             |                      |
+| ----------------- | ------------------------------------- | --------------------------- | -------------------- |
+| Class Description | 활성 운행 세션 조회용 Repository               |                             |                      |
+| 구분                | Name                                  | Return Type                 | Description          |
+| ---               | ---                                   | ---                         | ---                  |
+| Method            | findActiveByVehicleId(Long vehicleId) | Optional<RideSessionEntity> | 차량 기준 현재 활성 운행 세션 조회 |
 
+| Class Name        | RideStatusRepository                                                |                            |                    |
+| ----------------- | ------------------------------------------------------------------- | -------------------------- | ------------------ |
+| Class Description | 학생별 탑승/하차 상태 조회용 Repository                                         |                            |                    |
+| 구분                | Name                                                                | Return Type                | Description        |
+| ---               | ---                                                                 | ---                        | ---                |
+| Method            | findByRideSessionIdAndStudentId(Long rideSessionId, Long studentId) | Optional<RideStatusEntity> | 운행 세션과 학생 기준 상태 조회 |
 
-| Class Name        | JwtAuthenticationFilter                                              |                  |            |
-| ----------------- | -------------------------------------------------------------------- | ---------------- | ---------- |
-| 구분        | Name          | Type             | Visibility    | Description   |
-| --------- | ------------- | ---------------- | ------------- | ------------- |
-| Attribute | tokenProvider | JwtTokenProvider | Private/Final | JWT 생성·검증 제공자 |
-| 구분     | Name                                 | Return Type | Description                                 |
-| ------ | ------------------------------------ | ----------- | ------------------------------------------- |
-| Method | doFilterInternal(...)                | void        | JWT 검증 후 SecurityContext에 Authentication 저장 |
-| Method | resolveToken(HttpServletRequest req) | String      | Authorization 헤더에서 Bearer Token 추출          |
+| Class Name        | GpsRecordRepository                                     |                           |                    |
+| ----------------- | ------------------------------------------------------- | ------------------------- | ------------------ |
+| Class Description | 차량 최신 GPS 위치 조회용 Repository                             |                           |                    |
+| 구분                | Name                                                    | Return Type               | Description        |
+| ---               | ---                                                     | ---                       | ---                |
+| Method            | findTopByVehicleIdOrderByRecordedAtDesc(Long vehicleId) | Optional<GpsRecordEntity> | 차량 기준 최신 GPS 기록 조회 |
 
+| Class Name        | EtaInfoRepository                                                   |                         |                     |
+| ----------------- | ------------------------------------------------------------------- | ----------------------- | ------------------- |
+| Class Description | ETA 정보 저장 및 조회용 Repository                                          |                         |                     |
+| 구분                | Name                                                                | Return Type             | Description         |
+| ---               | ---                                                                 | ---                     | ---                 |
+| Method            | findByRideSessionIdAndStudentId(Long rideSessionId, Long studentId) | Optional<EtaInfoEntity> | 운행 세션과 학생 기준 ETA 조회 |
 
+| Class Name        | NotificationRepository                |                    |             |
+| ----------------- | ------------------------------------- | ------------------ | ----------- |
+| Class Description | 알림 저장용 Repository                     |                    |             |
+| 구분                | Name                                  | Return Type        | Description |
+| ---               | ---                                   | ---                | ---         |
+| Method            | save(NotificationEntity notification) | NotificationEntity | 알림 저장       |
 
+| Class Name        | NotificationLogRepository                                                               |                                 |                         |
+| ----------------- | --------------------------------------------------------------------------------------- | ------------------------------- | ----------------------- |
+| Class Description | 알림 중복 방지용 최근 이력 조회 Repository                                                           |                                 |                         |
+| 구분                | Name                                                                                    | Return Type                     | Description             |
+| ---               | ---                                                                                     | ---                             | ---                     |
+| Method            | findTopByTypeAndTargetStudentIdOrderBySentAtDesc(NotificationType type, Long studentId) | Optional<NotificationLogEntity> | 동일 학생/유형 기준 최근 발송 이력 조회 |
 
-| Class Name        | JwtAuthenticationEntryPoint                                     |                        |            |
-| ----------------- | -------------------------------------------------------- | ---------------------- | ---------- |
-| 구분                    | Name                            | Type | Visibility |
-| --------------------- | ------------------------------- | ---- | ---------- |
-| **Class Name**        | JwtAuthenticationEntryPoint     |      |            |
-| **Class Description** | 인증 실패(401 Unauthorized) 시 처리 담당 |      |            |
-| 구분     | Name          | Return Type | Description       |
-| ------ | ------------- | ----------- | ----------------- |
-| Method | commence(...) | void        | 인증 실패 시 401 응답 전송 |
-
-
-| Class Name        | JwtAccessDeniedHandler                                           |                             |            |
-| ----------------- | --------------------------------------------------------- | --------------------------- | ---------- |
-| 구분                    | Name                         | Type | Visibility |
-| --------------------- | ---------------------------- | ---- | ---------- |
-| **Class Name**        | JwtAccessDeniedHandler       |      |            |
-| **Class Description** | 인가 실패(403 Forbidden) 시 처리 담당 |      |            |
-| 구분     | Name        | Return Type | Description       |
-| ------ | ----------- | ----------- | ----------------- |
-| Method | handle(...) | void        | 권한 부족 시 403 응답 전송 |
-
-
-
-| Class Name        | CustomUserDetailsService            |      |            |
-| ----------------- | -------------------------------------- | ---- | ---------- |
-| 구분                    | Name                                       | Type | Visibility |
-| --------------------- | ------------------------------------------ | ---- | ---------- |
-| **Class Name**        | CustomUserDetailsService                   |      |            |
-| **Class Description** | GitHub ID 기반 사용자 조회(UserDetailsService 구현) |      |            |
-| 구분        | Name           | Type           | Visibility    | Description        |
-| --------- | -------------- | -------------- | ------------- | ------------------ |
-| Attribute | userRepository | UserRepository | Private/Final | 사용자 조회용 Repository |
-| 구분     | Name                                | Return Type | Description                             |
-| ------ | ----------------------------------- | ----------- | --------------------------------------- |
-| Method | loadUserByUsername(String githubId) | UserDetails | github_id로 유저 조회 후 CustomUserDetails 생성 |
-
-
-| Class Name        | CustomUserDetails                |      | ---------- |
-| ----------------- | ------------------------------------- | ---- | ---------- |
-| 구분                    | Name                                             | Type | Visibility |
-| --------------------- | ------------------------------------------------ | ---- | ---------- |
-| **Class Name**        | CustomUserDetails                                |      |            |
-| **Class Description** | UserEntity를 Spring Security의 UserDetails로 변환한 객체 |      |            |
-| 구분        | Name                  | Type                                   | Visibility | Description             |
-| --------- | --------------------- | -------------------------------------- | ---------- | ----------------------- |
-| Attribute | userId                | Long                                   | Private    | 사용자 PK                  |
-| Attribute | githubId              | String                                 | Private    | GitHub ID (username 대체) |
-| Attribute | admin                 | boolean                                | Private    | 관리자 여부                  |
-| Attribute | authorities           | Collection<? extends GrantedAuthority> | Private    | 역할/권한                   |
-| Attribute | accountNonLocked      | boolean                                | Private    | 계정 잠김 여부                |
-| Attribute | accountNonExpired     | boolean                                | Private    | 계정 만료 여부                |
-| Attribute | credentialsNonExpired | boolean                                | Private    | 자격 만료 여부                |
-| Attribute | enabled               | boolean                                | Private    | 활성화 여부(탈퇴 user=false)   |
-| 구분     | Name                      | Return Type       | Description          |
-| ------ | ------------------------- | ----------------- | -------------------- |
-| Method | from(UserEntity user)     | CustomUserDetails | 엔티티 → UserDetails 변환 |
-| Method | getAuthorities()          | Collection        | 권한 반환                |
-| Method | getUsername()             | String            | GitHub ID 반환         |
-| Method | getPassword()             | String            | (OAuth만 사용 → null)   |
-| Method | isAccountNonLocked()      | boolean           | 잠김 여부                |
-| Method | isAccountNonExpired()     | boolean           | 만료 여부                |
-| Method | isCredentialsNonExpired() | boolean           | 자격증명 만료 여부           |
-| Method | isEnabled()               | boolean           | 계정 활성 여부             |
-
-| Class Name        | SecurityConfig                                      |                        |            |
-| ----------------- | -------------------------------------------------------- | ---------------------- | ---------- |
-| 구분                    | Name                               | Type | Visibility |
-| --------------------- | ---------------------------------- | ---- | ---------- |
-| **Class Name**        | SecurityConfig                     |      |            |
-| **Class Description** | Spring Security 설정(필터, 권한, CORS 등) |      |            |
-| 구분        | Name                     | Type                        | Visibility    | Description  |
-| --------- | ------------------------ | --------------------------- | ------------- | ------------ |
-| Attribute | jwtTokenProvider         | JwtTokenProvider            | Private/Final | JWT Provider |
-| Attribute | authenticationEntryPoint | JwtAuthenticationEntryPoint | Private/Final | 401 에러 처리    |
-| Attribute | accessDeniedHandler      | JwtAccessDeniedHandler      | Private/Final | 403 에러 처리    |
-| 구분     | Name                           | Return Type             | Description            |
-| ------ | ------------------------------ | ----------------------- | ---------------------- |
-| Method | corsConfigurationSource()      | CorsConfigurationSource | CORS 설정 생성             |
-| Method | passwordEncoder()              | PasswordEncoder         | BCrypt PasswordEncoder |
-| Method | filterChain(HttpSecurity http) | SecurityFilterChain     | 전체 Security 설정 로직      |
-
-| Class Name        | SecurityUtil                                    |                        |            |
-| ----------------- | -------------------------------------------------------- | ---------------------- | ---------- |
-| 구분                    | Name                                          | Type | Visibility |
-| --------------------- | --------------------------------------------- | ---- | ---------- |
-| **Class Name**        | SecurityUtil                                  |      |            |
-| **Class Description** | SecurityContext에서 현재 로그인한 userId를 가져오는 유틸 클래스 |      |            |
-| 구분     | Name               | Return Type | Description                            |
-| ------ | ------------------ | ----------- | -------------------------------------- |
-| Method | getCurrentUserId() | Long        | SecurityContext의 principal에서 userId 추출 |
 
 
 #### Service Class
 
-| Class Name        | AuthService                                                        |            |            |
-| ----------------- | ------------------------------------------------------------------ | ---------- | ---------- |
-| Class Description | GitHub 로그인, 로그아웃, 토큰 재발급 등 인증 관련 핵심 로직 담당                          |            |            |
-| 구분        | Name             | Type             | Visibility      | Description         |
-| --------- | ---------------- | ---------------- | --------------- | ------------------- |
-| Attribute | userRepository   | UserRepository   | Private / Final | 사용자 조회용 JPA 리포지토리   |
-| Attribute | jwtTokenProvider | JwtTokenProvider | Private / Final | JWT 생성 및 검증 담당 컴포넌트 |
-| 구분     | Name                                | Return Type | Description                                                                      |
-| ------ | ----------------------------------- | ----------- | -------------------------------------------------------------------------------- |
-| Method | issueTokensForUser(UserEntity user) | AuthTokens  | GitHub OAuth 등을 통해 확보된 UserEntity 기반으로 역할(is_admin) 확인 후 Access/Refresh 토큰 세트 발급 |
-| Method | refresh(String refreshToken)        | AuthTokens  | 전달받은 Refresh Token을 검증 후, 유저 상태를 확인하고 새 Access/Refresh Token 재발급                 |
-| Method | logout(Long userId)                 | void        | 현재 구조에서는 stateless JWT 이므로 별도 처리 없이 로그아웃 훅 제공(추후 블랙리스트/저장소 도입 시 확장 가능)           |
+| Class Name        | NotificationLogRepository                                                               |                                 |                         |
+| ----------------- | --------------------------------------------------------------------------------------- | ------------------------------- | ----------------------- |
+| Class Description | 알림 중복 방지용 최근 이력 조회 Repository                                                           |                                 |                         |
+| 구분                | Name                                                                                    | Return Type                     | Description             |
+| ---               | ---                                                                                     | ---                             | ---                     |
+| Method            | findTopByTypeAndTargetStudentIdOrderBySentAtDesc(NotificationType type, Long studentId) | Optional<NotificationLogEntity> | 동일 학생/유형 기준 최근 발송 이력 조회 |
 
+| Class Name        | RouteQueryService                           |                      |                                |                  |
+| ----------------- | ------------------------------------------- | -------------------- | ------------------------------ | ---------------- |
+| Class Description | 차량 노선, 정류장 목록, 정류장 진행 상태 조회를 담당하는 서비스       |                      |                                |                  |
+| 구분                | Name                                        | Type                 | Visibility                     | Description      |
+| ---               | ---                                         | ---                  | ---                            | ---              |
+| Attribute         | routeRepository                             | RouteRepository      | Private / Final                | 노선 조회 Repository |
+| Attribute         | vehicleRepository                           | VehicleRepository    | Private / Final                | 차량 조회 Repository |
+| 구분                | Name                                        | Return Type          | Description                    |                  |
+| ---               | ---                                         | ---                  | ---                            |                  |
+| Method            | getRouteInfo(Long parentId, Long studentId) | RouteInfoResponseDto | 학생에게 배정된 차량의 노선 및 정류장 정보를 반환   |                  |
+| Method            | getStopProgress(Long vehicleId)             | List<StopSummaryDto> | 차량 현재 위치를 기준으로 정류장 진행 상태 목록 반환 |                  |
 
-| Class Name        | GithubAuthService                                                           |            |            |
-| ----------------- | --------------------------------------------------------------------------- | ---------- | ---------- |
-| Class Description | 깃허브 OAuth 인증 절차 및 GitHub 사용자 정보 연동 로직 수행                                    |            |            |
-| 구분        | Name           | Type           | Visibility      | Description                               |
-| --------- | -------------- | -------------- | --------------- | ----------------------------------------- |
-| Attribute | clientId       | String         | Private         | GitHub OAuth Client ID (환경설정에서 주입)        |
-| Attribute | clientSecret   | String         | Private         | GitHub OAuth Client Secret (환경설정에서 주입)    |
-| Attribute | redirectUri    | String         | Private         | GitHub OAuth Redirect URI                 |
-| Attribute | userRepository | UserRepository | Private / Final | GitHub 로그인(github_id) 기준 사용자 조회/저장용 리포지토리 |
-| Attribute | authService    | AuthService    | Private / Final | 인증 토큰 발급 로직(AuthTokens 생성) 담당 서비스         |
-| Attribute | restTemplate   | RestTemplate   | Private / Final | GitHub API 호출용 HTTP 클라이언트                 |
-| 구분     | Name                                          | Return Type | Description                                                                                    |
-| ------ | --------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
-| Method | buildAuthorizeUrl()                           | String      | 프론트에서 GitHub 로그인 버튼 클릭 시 사용할 `https://github.com/login/oauth/authorize` URL 생성                 |
-| Method | exchangeCodeForAccessToken(String code)       | String      | GitHub가 넘겨준 인가 코드(code)를 이용해 Access Token으로 교환                                                 |
-| Method | fetchGithubLogin(String accessToken)          | String      | GitHub API(`/user`) 호출로 프로필 조회 후 `login` 값을 github_id로 사용                                      |
-| Method | loginWithGithub(GithubAuthDto dto)            | AuthTokens  | ① accessToken 없으면 code로 교환 → ② GitHub login 조회 → ③ 기존 유저 조회 or 신규 생성 → ④ AuthService 통해 JWT 발급 |
-| Method | createUserFromGithubLogin(String githubLogin) | UserEntity  | GitHub로 처음 로그인한 사용자를 ERD 규칙에 맞게 생성 후 저장 (is_admin=false, 통계 0, createdAt=now 등)                |
+| Class Name        | EtaService                          |                      |                     |                      |
+| ----------------- | ----------------------------------- | -------------------- | ------------------- | -------------------- |
+| Class Description | 학생별 ETA 및 정류장별 ETA 계산을 담당하는 서비스     |                      |                     |                      |
+| 구분                | Name                                | Type                 | Visibility          | Description          |
+| ---               | ---                                 | ---                  | ---                 | ---                  |
+| Attribute         | gpsRecordRepository                 | GpsRecordRepository  | Private / Final     | 최신 GPS 조회 Repository |
+| Attribute         | etaInfoRepository                   | EtaInfoRepository    | Private / Final     | ETA 저장/조회 Repository |
+| 구분                | Name                                | Return Type          | Description         |                      |
+| ---               | ---                                 | ---                  | ---                 |                      |
+| Method            | calculateStudentEta(Long studentId) | EtaResponseDto       | 학생의 하차 정류장까지 ETA 계산 |                      |
+| Method            | calculateStopEta(Long vehicleId)    | List<EtaResponseDto> | 노선 전체 정류장별 ETA 계산   |                      |
 
-| Class Name        | UserService                                        |                 |            |
-| ----------------- | -------------------------------------------------- | --------------- | ---------- |
-| Class Description | 사용자 정보 조회, 탈퇴(소프트 삭제) 등 일반 사용자 관리 로직 담당            |                 |            |
-| 구분        | Name           | Type           | Visibility      | Description          |
-| --------- | -------------- | -------------- | --------------- | -------------------- |
-| Attribute | userRepository | UserRepository | Private / Final | 사용자 조회/저장용 JPA 리포지토리 |
-| 구분     | Name                           | Return Type     | Description                                                     |
-| ------ | ------------------------------ | --------------- | --------------------------------------------------------------- |
-| Method | getMyProfile()                 | UserResponseDto | SecurityContext의 userId를 기준으로 내 프로필과 GitHub 통계 정보를 조회하여 DTO로 반환 |
-| Method | getByGithubId(String githubId) | UserResponseDto | github_id 기준 사용자 정보를 조회하여 DTO로 반환(관리자/내부용)                      |
-| Method | deleteMyAccount()              | void            | 현재 로그인한 사용자를 조회 후 soft delete(`user.softDelete()`) 수행           |
+| Class Name        | EtaService                          |                      |                     |                      |
+| ----------------- | ----------------------------------- | -------------------- | ------------------- | -------------------- |
+| Class Description | 학생별 ETA 및 정류장별 ETA 계산을 담당하는 서비스     |                      |                     |                      |
+| 구분                | Name                                | Type                 | Visibility          | Description          |
+| ---               | ---                                 | ---                  | ---                 | ---                  |
+| Attribute         | gpsRecordRepository                 | GpsRecordRepository  | Private / Final     | 최신 GPS 조회 Repository |
+| Attribute         | etaInfoRepository                   | EtaInfoRepository    | Private / Final     | ETA 저장/조회 Repository |
+| 구분                | Name                                | Return Type          | Description         |                      |
+| ---               | ---                                 | ---                  | ---                 |                      |
+| Method            | calculateStudentEta(Long studentId) | EtaResponseDto       | 학생의 하차 정류장까지 ETA 계산 |                      |
+| Method            | calculateStopEta(Long vehicleId)    | List<EtaResponseDto> | 노선 전체 정류장별 ETA 계산   |                      |
+
+| Class Name        | DelayAnalysisService               |                   |                                    |                   |
+| ----------------- | ---------------------------------- | ----------------- | ---------------------------------- | ----------------- |
+| Class Description | 지연 원인 분석 및 위험 이벤트 판단을 담당하는 서비스     |                   |                                    |                   |
+| 구분                | Name                               | Type              | Visibility                         | Description       |
+| ---               | ---                                | ---               | ---                                | ---               |
+| Attribute         | etaInfoRepository                  | EtaInfoRepository | Private / Final                    | ETA 조회 Repository |
+| 구분                | Name                               | Return Type       | Description                        |                   |
+| ---               | ---                                | ---               | ---                                |                   |
+| Method            | analyzeDelayReason(Long studentId) | String            | 지연 원인을 교통 혼잡, 장시간 정차, 복합 원인 등으로 분석 |                   |
+| Method            | isTardyRisk(Long studentId)        | boolean           | 학생별 ETA와 예정 시각 비교 후 지각 위험 여부 판단    |                   |
+| Method            | isAbnormalStop(Long vehicleId)     | boolean           | 차량 장시간 정차 여부 판단                    |                   |
+| Method            | isRouteDeviation(Long vehicleId)   | boolean           | 차량이 고정 노선에서 크게 벗어났는지 판단            |                   |
+
+| Class Name        | NotificationPolicyService                      |                           |                                      |                        |
+| ----------------- | ---------------------------------------------- | ------------------------- | ------------------------------------ | ---------------------- |
+| Class Description | 알림 중복 방지 정책 적용 여부를 판단하는 서비스                    |                           |                                      |                        |
+| 구분                | Name                                           | Type                      | Visibility                           | Description            |
+| ---               | ---                                            | ---                       | ---                                  | ---                    |
+| Attribute         | notificationLogRepository                      | NotificationLogRepository | Private / Final                      | 최근 알림 이력 조회 Repository |
+| 구분                | Name                                           | Return Type               | Description                          |                        |
+| ---               | ---                                            | ---                       | ---                                  |                        |
+| Method            | canSend(NotificationType type, Long studentId) | boolean                   | 동일 학생/동일 알림 유형에 대해 쿨다운 내 중복 발송 여부 판단 |                        |
+
+| Class Name        | NotificationService                          |                           |                            |                           |
+| ----------------- | -------------------------------------------- | ------------------------- | -------------------------- | ------------------------- |
+| Class Description | 탑승, 하차, 지각 위험, 비정상 정차, 경로 이탈 알림 발송을 담당하는 서비스 |                           |                            |                           |
+| 구분                | Name                                         | Type                      | Visibility                 | Description               |
+| ---               | ---                                          | ---                       | ---                        | ---                       |
+| Attribute         | notificationRepository                       | NotificationRepository    | Private / Final            | 알림 저장 Repository          |
+| Attribute         | notificationLogRepository                    | NotificationLogRepository | Private / Final            | 알림 발송 이력 저장/조회 Repository |
+| Attribute         | notificationPolicyService                    | NotificationPolicyService | Private / Final            | 중복 방지 정책 서비스              |
+| 구분                | Name                                         | Return Type               | Description                |                           |
+| ---               | ---                                          | ---                       | ---                        |                           |
+| Method            | sendBoardingAlert(Long studentId)            | NotificationResponseDto   | 학생 탑승 시 학부모에게 푸시 알림 발송     |                           |
+| Method            | sendDropoffAlert(Long studentId)             | NotificationResponseDto   | 학생 하차 시 학부모에게 푸시 알림 발송     |                           |
+| Method            | sendTardinessAlert(Long studentId)           | NotificationResponseDto   | 도착 지연 예상 시 지각 위험 알림 발송     |                           |
+| Method            | sendAbnormalStopAlert(Long vehicleId)        | NotificationResponseDto   | 일정 시간 이상 정차 시 비정상 정차 알림 발송 |                           |
+| Method            | sendRouteDeviationAlert(Long vehicleId)      | NotificationResponseDto   | 등록 노선 이탈 시 경로 이탈 알림 발송     |                           |
+
+| Class Name        | RideService                                     |                                 |                             |                           |
+| ----------------- | ----------------------------------------------- | ------------------------------- | --------------------------- | ------------------------- |
+| Class Description | NFC 태깅 기반 탑승/하차 처리 및 탑승 예정 학생 목록 조회를 담당하는 서비스   |                                 |                             |                           |
+| 구분                | Name                                            | Type                            | Visibility                  | Description               |
+| ---               | ---                                             | ---                             | ---                         | ---                       |
+| Attribute         | rideStatusRepository                            | RideStatusRepository            | Private / Final             | 학생 운행 상태 조회/저장 Repository |
+| Attribute         | rideSessionRepository                           | RideSessionRepository           | Private / Final             | 활성 운행 세션 조회 Repository    |
+| 구분                | Name                                            | Return Type                     | Description                 |                           |
+| ---               | ---                                             | ---                             | ---                         |                           |
+| Method            | processBoarding(Long studentId, String cardUid) | void                            | NFC 태그를 통해 학생 탑승 처리 및 상태 변경 |                           |
+| Method            | processDropoff(Long studentId, String cardUid)  | void                            | NFC 태그를 통해 학생 하차 처리 및 상태 변경 |                           |
+| Method            | getPlannedBoardingStudents(Long vehicleId)      | List<PlannedBoardingStudentDto> | 기사 앱에서 조회할 탑승 예정 학생 목록 반환   |                           |
+
 
 
 #### Controller Class
 
-| Class Name        | AuthController                                                  |                            |            |
-| ----------------- | --------------------------------------------------------------- | -------------------------- | ---------- |
-| Class Description | GitHub 로그인, 로그아웃, 토큰 재발급 요청을 처리하는 컨트롤러                          |                            |            |
-| 구분        | Name              | Type              | Visibility      | Description                   |
-| --------- | ----------------- | ----------------- | --------------- | ----------------------------- |
-| Attribute | githubAuthService | GithubAuthService | Private / Final | GitHub OAuth 및 로그인 처리 서비스     |
-| Attribute | authService       | AuthService       | Private / Final | 토큰 재발급, 로그아웃 등 인증 비즈니스 로직 서비스 |
-| 구분     | Name                                      | Return Type                | Description                                                                                 |
-| ------ | ----------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------- |
-| Method | getGithubAuthorizeUrl()                   | ResponseEntity<String>     | 프론트에서 GitHub 로그인 버튼 클릭 시, GitHub 인증 페이지로 이동할 authorize URL 반환 (`GET /github/authorize-url`) |
-| Method | githubCallback(String code, String state) | ResponseEntity<AuthTokens> | GitHub에서 콜백으로 넘겨준 code/state로 GitHub 인증 및 JWT 발급 수행 (`GET /github/callback`)                |
-| Method | loginWithGithub(GithubAuthDto dto)        | ResponseEntity<AuthTokens> | SPA 환경 등에서 code를 body로 받아 GitHub 로그인 처리 (`POST /github/login`)                              |
-| Method | refresh(Map<String,String> body)          | ResponseEntity<AuthTokens> | 리프레시 토큰을 이용해 Access/Refresh 토큰 재발급 (`POST /refresh`)                                        |
-| Method | logout(Map<String,Object> body)           | ResponseEntity<Void>       | 로그아웃 요청 처리, 필요 시 userId 기반 후처리 가능 (`POST /logout`)                                          |
+| Class Name        | GpsController                                  |                                            |                        |               |
+| ----------------- | ---------------------------------------------- | ------------------------------------------ | ---------------------- | ------------- |
+| Class Description | GPS 기반 위치, 노선, 정류장 진행 상태, ETA 조회 요청을 처리하는 컨트롤러 |                                            |                        |               |
+| 구분                | Name                                           | Type                                       | Visibility             | Description   |
+| ---               | ---                                            | ---                                        | ---                    | ---           |
+| Attribute         | gpsTrackingService                             | GpsTrackingService                         | Private / Final        | 실시간 위치 추적 서비스 |
+| Attribute         | routeQueryService                              | RouteQueryService                          | Private / Final        | 노선/정류장 조회 서비스 |
+| Attribute         | etaService                                     | EtaService                                 | Private / Final        | ETA 계산 서비스    |
+| 구분                | Name                                           | Return Type                                | Description            |               |
+| ---               | ---                                            | ---                                        | ---                    |               |
+| Method            | getRealtimeLocation(Long studentId)            | ResponseEntity<VehicleLocationResponseDto> | 학생 기준 현재 차량 위치 조회      |               |
+| Method            | getRouteInfo(Long studentId)                   | ResponseEntity<RouteInfoResponseDto>       | 학생 기준 노선 및 정류장 정보 조회   |               |
+| Method            | getStopProgress(Long studentId)                | ResponseEntity<List<StopSummaryDto>>       | 학생 기준 정류장 진행 상태 조회     |               |
+| Method            | getStudentEta(Long studentId)                  | ResponseEntity<EtaResponseDto>             | 학생 기준 ETA 조회           |               |
+| Method            | getStopEta(Long studentId)                     | ResponseEntity<List<EtaResponseDto>>       | 학생이 속한 노선의 정류장별 ETA 조회 |               |
 
-| Class Name        | GithubAuthController                                                  |                            |            |
-| ----------------- | --------------------------------------------------------------- | -------------------------- | ---------- |
-| Class Description | GitHub OAuth 로그인 전용 엔드포인트를 제공하는 컨트롤러                          |                            |            |
-| 구분        | Name              | Type              | Visibility      | Description                  |
-| --------- | ----------------- | ----------------- | --------------- | ---------------------------- |
-| Attribute | githubAuthService | GithubAuthService | Private / Final | GitHub OAuth 인증 및 로그인 처리 서비스 |
-| 구분     | Name                                | Return Type                | Description                                                                |
-| ------ | ----------------------------------- | -------------------------- | -------------------------------------------------------------------------- |
-| Method | getAuthorizeUrl()                   | ResponseEntity<String>     | GitHub 로그인 버튼 클릭 시 사용할 authorize URL 반환 (`GET /authorize-url`)             |
-| Method | callback(String code, String state) | ResponseEntity<AuthTokens> | GitHub OAuth 콜백 처리, code/state로 로그인 후 JWT 토큰 반환 (`GET /callback`)          |
-| Method | loginWithGithub(GithubAuthDto dto)  | ResponseEntity<AuthTokens> | 프론트에서 이미 code → accessToken 교환 완료 후 accessToken만 보내는 경우 처리 (`POST /login`) |
+| Class Name        | NotificationController             |                                         |                 |             |
+| ----------------- | ---------------------------------- | --------------------------------------- | --------------- | ----------- |
+| Class Description | 탑승/하차/지각 위험 관련 알림 발송 요청을 처리하는 컨트롤러 |                                         |                 |             |
+| 구분                | Name                               | Type                                    | Visibility      | Description |
+| ---               | ---                                | ---                                     | ---             | ---         |
+| Attribute         | notificationService                | NotificationService                     | Private / Final | 알림 발송 서비스   |
+| 구분                | Name                               | Return Type                             | Description     |             |
+| ---               | ---                                | ---                                     | ---             |             |
+| Method            | sendBoardingAlert(Long studentId)  | ResponseEntity<NotificationResponseDto> | 학생 탑승 알림 발송     |             |
+| Method            | sendDropoffAlert(Long studentId)   | ResponseEntity<NotificationResponseDto> | 학생 하차 알림 발송     |             |
+| Method            | sendTardinessAlert(Long studentId) | ResponseEntity<NotificationResponseDto> | 지각 위험 알림 발송     |             |
 
+| Class Name        | RideController                               |                                                 |                      |              |
+| ----------------- | -------------------------------------------- | ----------------------------------------------- | -------------------- | ------------ |
+| Class Description | NFC 탑승/하차 처리 및 기사용 탑승 예정 학생 목록 조회를 처리하는 컨트롤러 |                                                 |                      |              |
+| 구분                | Name                                         | Type                                            | Visibility           | Description  |
+| ---               | ---                                          | ---                                             | ---                  | ---          |
+| Attribute         | rideService                                  | RideService                                     | Private / Final      | 운행 상태 처리 서비스 |
+| 구분                | Name                                         | Return Type                                     | Description          |              |
+| ---               | ---                                          | ---                                             | ---                  |              |
+| Method            | tagBoarding(Long studentId, String cardUid)  | ResponseEntity<Void>                            | NFC 태깅 기반 학생 탑승 처리   |              |
+| Method            | tagDropoff(Long studentId, String cardUid)   | ResponseEntity<Void>                            | NFC 태깅 기반 학생 하차 처리   |              |
+| Method            | getPlannedStudents(Long vehicleId)           | ResponseEntity<List<PlannedBoardingStudentDto>> | 차량 기준 탑승 예정 학생 목록 조회 |              |
 
-| Class Name        | UserController                                 |                                 |            |
-| ----------------- | ---------------------------------------------- | ------------------------------- | ---------- |
-| Class Description | 현재 사용자 정보 조회, 계정 탈퇴 요청을 처리하는 컨트롤러              |                                 |            |
-| 구분        | Name        | Type        | Visibility      | Description                    |
-| --------- | ----------- | ----------- | --------------- | ------------------------------ |
-| Attribute | userService | UserService | Private / Final | 사용자 정보 조회 및 계정 삭제 로직을 처리하는 서비스 |
-| 구분     | Name                           | Return Type                     | Description                                                       |
-| ------ | ------------------------------ | ------------------------------- | ----------------------------------------------------------------- |
-| Method | getMyProfile()                 | ResponseEntity<UserResponseDto> | 현재 로그인한 사용자의 프로필 정보 조회 (`GET /me`)                                |
-| Method | getByGithubId(String githubId) | ResponseEntity<UserResponseDto> | github_id 기준 특정 사용자 정보 조회 (관리자용 예시) (`GET /by-github/{githubId}`) |
-| Method | deleteMyAccount()              | ResponseEntity<Void>            | 현재 로그인한 사용자의 소프트 삭제(탈퇴) 처리 (`DELETE /me`)                         |
 
 ## 4. Sequence diagram
 ## 유저
