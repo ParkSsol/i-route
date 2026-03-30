@@ -379,7 +379,81 @@
 
 
 - **Concurrency**: 
+- **Due Date**:
+
+### **Use case #1 : 실시간 위치 추적**
+#### GENERAL CHARACTERISTICS
+- **Summary**  
+  
+
+- **Scope**  
+  아이루트
+
+- **Level**  
+   
+
+- **Author**  
+  
+
+- **Last Update**  
+  
+
+- **Status**  
+  
+
+- **Primary Actor**  
+  
+
+- **Preconditions**  
+  1. 
+
+- **Trigger**  
+  
+
+- **Success Post Condition**  
+  1.
+- **Failed Post Condition**  
+ 1.  
+
+#### MAIN SUCCESS SCENARIO
+| Step | Action                                                                                                |
+| ---- | ----------------------------------------------------------------------------------------------------- |
+| S    | .                                                                           |
+| 1    |                                                         |
+| 2    |                                                                       |
+| 3    |                                               |
+| 4    |                                          |
+| 5    |                                                |
+| 6    |                                                             |
+| 7    |  |
+| 8    |                                 |
+| 9    |                                                              |
+| 10   |                                                                |
+
+
+
+
+#### EXTENSION SCENARIOS
+| Step | Branching Action                                                                           |
+| ---- | ------------------------------------------------------------------------------------------ |
+| 4a   | |
+| 5a   |                  |
+| 7a   |                            |
+| 7b   |                                   |
+| 8a   |                                                       |
+| 9a   |                           |
+
+
+
+
+#### RELATED INFORMATION
+- **Performance**: 
+- **Frequency**:
+
+
+- **Concurrency**: 
 - **Due Date**: 
+
 
 ---
   ## 3. Class diagram
