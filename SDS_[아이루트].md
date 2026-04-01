@@ -2025,7 +2025,7 @@ GPS 위치 갱신 정보는 5초 주기로 반영되는 것을 목표로 한다.
 
   
 
-### **Use case #37 : GitHub OAuth 학생 탑승 알림**
+### **Use case #37 : 학생 탑승 알림**
 #### GENERAL CHARACTERISTICS
 - **Summary**  
   학생이 셔틀버스에 탑승하여 NFC 카드를 태깅하면 시스템이 이를 인식하여 학부모 유저에게 앱으로 실시간 탑승 알림을 전송
@@ -2061,297 +2061,507 @@ GPS 위치 갱신 정보는 5초 주기로 반영되는 것을 목표로 한다.
   2. 라즈베리파이 단말기에서 인식된 학생 고유 식별자와 태깅 타임스탬프를 즉시 승차 처리 API로 전송하여 승차 정보를 동기화한다.
   3. 서버는 학부모 유저의 스마트폰으로 실시간 푸시 알림을 전송한다.
 - **Failed Post Condition**  
- 1. 단말기 화면에 붉은색 경고 배경과 함께 실패 원인에 따른 안내 문구가 팝업 형태로 3초간 출력되며 상황별 맞춤형 경고 음성이 내장 스피커를 통해 송출되어 학생이 재태깅이 필요함을 인지할 수 있도록 한다.
+ 1. 단말기 화면에 붉은색 경고 UI과 함께 실패 원인에 따른 안내 문구가 팝업 형태로 3초간 출력되며 상황별 맞춤형 경고 음성이 내장 스피커를 통해 송출되어 학생이 재태깅이 필요함을 인지할 수 있도록 한다.
 
 #### MAIN SUCCESS SCENARIO
 | Step | Action                                                                                                |
 | ---- | ----------------------------------------------------------------------------------------------------- |
-| S    | .                                                                           |
-| 1    |                                                         |
-| 2    |                                                                       |
-| 3    |                                               |
-| 4    |                                          |
-| 5    |                                                |
-| 6    |                                                             |
-| 7    |  |
-| 8    |                                 |
-| 9    |                                                              |
-| 10   |                                                                |
-
+| S    | 학생이 단말기에 NFC 카드를 접촉하면 학부모 유저에게 실시간 탑승 알림이 전송되고 단말기 화면과 음성을 통해 랜덤 환영 인삿말이 출력된다.                                                |
+| 1    | 학생이 셔틀버스에 탑승하며 단말기에 NFC 카드를 접촉한다.                                                     |
+| 2    | 단말기(라즈베리파이)가 NFC의 식별 정보를 백엔드 서버로 전송하고 서버는 FCM을 통해 학부모 유저에게 탑승 푸시 알림을 전송한다.                                                                   |
+| 3    | 단말기 화면에 학생의 프로필과 랜덤 환영 인삿말이 표시와 함께 음성(TTS)이 송출된다.                                               |
 
 
 
 #### EXTENSION SCENARIOS
 | Step | Branching Action                                                                           |
 | ---- | ------------------------------------------------------------------------------------------ |
-| 4a   | |
-| 5a   |                  |
-| 7a   |                            |
-| 7b   |                                   |
-| 8a   |                                                       |
-| 9a   |                           |
-
+| 1a   | 태깅 인식 오류로 식별 정보 인식에 실패할 경우 단말기 화면에 붉은색 경고 UI를 송출한다. |
+| 1b   | '카드를 다시 대주세요.'라는 TTS 음성을 송출하여 재태깅을 유도한다.                 |
+| 2a   | 네트워크 연결 오류로 서버 전송에 실패할 경우 태깅 데이터를 로컬 DB에 임시 저장한다.                           |
+| 2b   | 단말기 상단에 네트워크 연결 중임을 알리는 상태 아이콘을 표시한다.                                  |
 
 
 
 #### RELATED INFORMATION
-- **Performance**: 
-- **Frequency**:
+- **Performance**: NFC 태그 인식부터 서버 전송 및 학부모 유저 푸시 알림까지의 프로세스는 2초 이내로 수행될 것을 목표로 한다.
+- 단말기(라즈베리파이) 내에서의 UI 전환 및 랜덤 TTS 출력은 태깅 후 0.5초 이내에 수행될 것으로 목표로 한다.
+- **Frequency**: 학생이 셔틀버스에 승차하여 NFC 카드를 태깅할 때 마다 매번 수행된다.
+- **Concurrency**: 한 대의 셔틀버스 내에서 다수의 학생이 1~2초 간격을 두고 연속적으로 태깅하더라도 식별 정보의 유실 없이 순차적으로 처리되어야 한다.
+- 여러 대의 셔틀버스가 동시에 운행되는 상황에서 단시간에 데이터가 서버로 집중되더라도 학부모 유저 푸시 알림 발송에 지연이 발생하지 않도록 대규모의 데이터 동시 전송에 대한 서버 안정성을 확보한다.
+- **Due Date**: 2026.03.31 
 
 
-- **Concurrency**: 
-- **Due Date**: 
+### **Use case #38 : 학생 하차 알림**
+#### GENERAL CHARACTERISTICS
+- **Summary**  
+  학생이 셔틀버스 하차 시 NFC 카드를 태깅하여 학부모 유저에게 실시간 하차 알림을 전송하고 단말기에는 작별 인삿말 문구와 TTS가 출력되는 기능이다.
 
+- **Scope**  
+  아이루트
+
+- **Level**  
+   User level
+
+- **Author**  
+   최은수
+
+- **Last Update**  
+   2026.03.30
+
+- **Status**  
+   Design
+
+- **Primary Actor**  
+   Student
+
+- **Preconditions**  
+  1. 학생은 학원의 고유 식별 번호가 입력된 NFC 카드를 소지하고 있어야 한다. (단, 학생은 직접적인 앱 사용자는 아니며 대신 물리적인 NFC 카드 태깅을 통해 승하차 이벤트를 발생시키는 주체이다.)
+  2. 셔틀버스 내 라즈베리파이 단말기가 설치되어 있어야 하고 네트워크에 연결된 상태여야 한다.
+  3. 학부모는 스마트폰에 '아이루트'앱을 설치하고 학부모 유저로 로그인 되어 있어야 하며 알림 수신에 동의한 상태여야 한다.
+
+- **Trigger**  
+  학생이 라즈베리파이 단말기(NFC 리더기)에 NFC 카드를 태깅하였을 때
+
+- **Success Post Condition**  
+  1. 단말기 화면에 해당 학생의 이름과 프로필 이미지가 3초간 출력되며 '반가워!', '안녕?', '어서와!'와 같은 환영 메시지가 내장된 스피커를 통해 밝은 톤의 음성(TTS 사용)으로 랜덤 송출된다.
+  2. 라즈베리파이 단말기에서 인식된 학생 고유 식별자와 태깅 타임스탬프를 즉시 승차 처리 API로 전송하여 승차 정보를 동기화한다.
+  3. 서버는 학부모 유저의 스마트폰으로 실시간 푸시 알림을 전송한다.
+- **Failed Post Condition**  
+ 1. 단말기 화면에 붉은색 경고 UI과 함께 실패 원인에 따른 안내 문구가 팝업 형태로 3초간 출력되며 상황별 맞춤형 경고 음성이 내장 스피커를 통해 송출되어 학생이 재태깅이 필요함을 인지할 수 있도록 한다.
+
+#### MAIN SUCCESS SCENARIO
+| Step | Action                                                                                                |
+| ---- | ----------------------------------------------------------------------------------------------------- |
+| S    | 학생이 단말기에 NFC 카드를 접촉하면 학부모 유저에게 실시간 탑승 알림이 전송되고 단말기 화면과 음성을 통해 랜덤 환영 인삿말이 출력된다.                                                |
+| 1    | 학생이 셔틀버스에 탑승하며 단말기에 NFC 카드를 접촉한다.                                                     |
+| 2    | 단말기(라즈베리파이)가 NFC의 식별 정보를 서버로 전송하고 서버는 FCM을 통해 학부모 유저에게 하차 푸시 알림을 전송한다.                                                                   |
+| 3    | 단말기 화면에 학생의 프로필과 랜덤 작별 인삿말 문구와 함께 음성(TTS)이 송출된다.                                               |
+
+
+
+#### EXTENSION SCENARIOS
+| Step | Branching Action                                                                           |
+| ---- | ------------------------------------------------------------------------------------------ |
+| 1a   | 태깅 인식 오류로 식별 정보 인식에 실패할 경우 단말기 화면에 붉은색 경고 UI를 송출한다. |
+| 1b   | '카드를 다시 대주세요.'라는 TTS 음성을 송출하여 재태깅을 유도한다.                 |
+| 2a   | 네트워크 연결 오류로 서버 전송에 실패할 경우 태깅 데이터를 로컬 DB에 임시 저장한다.                           |
+| 2b   | 단말기 화면 상단에 네트워크 연결 중임을 알리는 상태 아이콘을 표시한다.                                  |
+
+
+
+#### RELATED INFORMATION
+- **Performance**: NFC 태그 인식부터 서버 전송 및 학부모 유저 푸시 알림까지의 프로세스는 2초 이내로 수행될 것을 목표로 한다.
+- 단말기(라즈베리파이) 내에서의 UI 전환 및 랜덤 TTS 출력은 태깅 후 0.5초 이내에 수행될 것으로 목표로 한다.
+- **Frequency**: 학생이 셔틀버스에서 하차하며 NFC 카드를 태깅할 때 마다 매번 수행된다.
+- **Concurrency**: 한 대의 셔틀버스 내에서 다수의 학생이 1~2초 간격을 두고 연속적으로 태깅하더라도 데이터 유실 없이 순차적으로 처리되어야 한다.
+- 여러 대의 셔틀버스가 동시에 운행되는 상황에서 단시간에 데이터가 서버로 집중되더라도 학부모 유저 푸시 알림 발송에 지연이 발생하지 않도록 대규모의 데이터 동시 전송에 대한 서버 안정성을 확보한다.
+- **Due Date**: 2026.03.31
 
 ---
   ## 3. Class diagram
+
 ### AI
 ```mermaid
 classDiagram
-    direction LR
+    direction LR
 
-    %% =========================
-    %% 도메인(Entity)
-    %% =========================
-    class StudentEntity {
-        <<entity>>
-        - Long studentId
-        - String name
-        - String school
-        - Integer grade
-    }
+    %% =========================
+    %% Entity Layer
+    %% =========================
+    class StudentEntity {
+        <<entity>>
+        - Long studentId
+        - String name
+        - StudyTendency learningTendency
+        - Integer currentLevel
+    }
 
-    class AcademicRecordEntity {
-        <<entity>>
-        - Long recordId
-        - Long studentId
-        - String subject
-        - String testName
-        - Integer score
-        - LocalDate testDate
-    }
+    class GradeEntity {
+        <<entity>>
+        - Long gradeId
+        - Long studentId
+        - Long subjectId
+        - Integer score
+        - LocalDate testDate
+        - Double percentile
+        + void updateScore(Integer score)
+    }
 
-    class SelfEvaluationEntity {
-        <<entity>>
-        - Long evaluationId
-        - Long studentId
-        - String subject
-        - String understandingLevel
-        - String studentComment
-        - LocalDate submittedAt
-    }
+    class StudyLogEntity {
+        <<entity>>
+        - Long logId
+        - Long studentId
+        - Long subjectId
+        - Integer durationMinutes
+        - LocalDateTime startTime
+        - LocalDateTime endTime
+    }
 
-    class TeacherFeedbackEntity {
-        <<entity>>
-        - Long feedbackId
-        - Long studentId
-        - Long teacherId
-        - String feedbackContent
-        - LocalDate submittedAt
-    }
+    class WrongAnswerEntity {
+        <<entity>>
+        - Long wrongAnswerId
+        - Long studentId
+        - Long questionId
+        - Integer failCount
+        - LocalDate lastFailedDate
+    }
 
-    class AiAnalysisResultEntity {
-        <<entity>>
-        - Long analysisId
-        - Long studentId
-        - String learningPattern
-        - String weakPoints
-        - String strongPoints
-        - Integer predictedNextScore
-        - LocalDateTime analyzedAt
-        + void updateAnalysis(String pattern, String weak, String strong, Integer predicted)
-    }
+    class TargetGoalEntity {
+        <<entity>>
+        - Long goalId
+        - Long studentId
+        - String targetKeyword
+        - LocalDate targetDate
+        - Integer dailyStudyHours
+    }
 
-    class AiRecommendationEntity {
-        <<entity>>
-        - Long recommendationId
-        - Long studentId
-        - String learningPacePlan
-        - String studyMethodSuggestion
-        - String goalBasedRecommendation
-        - String recommendedMaterials
-        - LocalDateTime generatedAt
-    }
+    %% =========================
+    %% DTO Layer
+    %% =========================
+    class MaterialRecommendationDto {
+        - Long materialId
+        - String title
+        - String materialType
+        - String matchReason
+    }
 
-    class ReviewPlanEntity {
-        <<entity>>
-        - Long planId
-        - Long studentId
-        - String weakConcept
-        - String generatedQuestionsUrl
-        - Integer reviewCycleDays
-        - LocalDate nextReviewDate
-    }
+    class AnalysisReportDto {
+        - String subjectName
+        - Double myPercentile
+        - Double averageScore
+        - String weakPointSummary
+    }
 
-    %% =========================
-    %% DTOs
-    %% =========================
-    class GradeInputDto {
-        - Long studentId
-        - String subject
-        - String testName
-        - Integer score
-    }
+    class ReviewPaperDto {
+        - Long paperId
+        - List questions
+        - List weakConcepts
+    }
 
-    class EvaluationInputDto {
-        - Long studentId
-        - String subject
-        - String understandingLevel
-        - String studentComment
-    }
+    class PredictedScoreDto {
+        - Integer expectedScoreMin
+        - Integer expectedScoreMax
+        - Double achievementProbability
+    }
 
-    class FeedbackInputDto {
-        - Long studentId
-        - Long teacherId
-        - String feedbackContent
-    }
+    %% =========================
+    %% Repository Layer
+    %% =========================
+    class GradeRepository {
+        <<interface>>
+        + List findByStudentIdOrderByTestDateAsc(Long studentId)
+        + GradeEntity save(GradeEntity grade)
+    }
 
-    class AiReportResponseDto {
-        - Long studentId
-        - String gradeTrendGraphData
-        - String summaryReport
-        - String detailedAnalysisReport
-        - Integer predictedNextScore
-    }
+    class WrongAnswerRepository {
+        <<interface>>
+        + List findByStudentIdOrderByFailCountDesc(Long studentId)
+    }
 
-    class AiRecommendationResponseDto {
-        - Long studentId
-        - String learningPacePlan
-        - String studyMethodSuggestion
-        - String goalBasedRecommendation
-        - String recommendedMaterials
-    }
+    class TargetGoalRepository {
+        <<interface>>
+        + Optional findByStudentId(Long studentId)
+    }
 
-    class ReviewPlanResponseDto {
-        - Long studentId
-        - String weakConcept
-        - String generatedQuestionsUrl
-        - LocalDate nextReviewDate
-    }
+    %% =========================
+    %% Service Layer
+    %% =========================
+    class AiRecommendationService {
+        - StudentRepository studentRepository
+        - GradeRepository gradeRepository
+        - StudyMaterialRepository materialRepository
+        + List recommendMaterials(Long studentId)
+        + StudyMethodDto suggestStudyMethod(Long studentId, Long subjectId)
+        + StudyRoadmapDto recommendGoalRoadmap(Long studentId)
+        + List recommendDailyReview(Long studentId)
+    }
 
-    %% =========================
-    %% Repository
-    %% =========================
-    class AcademicRecordRepository {
-        <<interface>>
-        + List~AcademicRecordEntity~ findByStudentIdOrderByTestDateAsc(Long studentId)
-    }
+    class ReportAnalysisService {
+        - GradeRepository gradeRepository
+        - StudyLogRepository studyLogRepository
+        + AnalysisReportDto generateScoreReport(Long studentId, Long testId)
+        + StudyPatternDto analyzeStudyPattern(Long studentId)
+        + StrengthAnalysisDto analyzeStrengths(Long studentId)
+    }
 
-    class SelfEvaluationRepository {
-        <<interface>>
-        + Optional~SelfEvaluationEntity~ findByStudentId(Long studentId)
-    }
+    class ReviewGenerationService {
+        - WrongAnswerRepository wrongAnswerRepository
+        - QuestionRepository questionRepository
+        + ReviewPaperDto generateCustomReviewPaper(Long studentId)
+    }
 
-    class TeacherFeedbackRepository {
-        <<interface>>
-        + Optional~TeacherFeedbackEntity~ findByStudentId(Long studentId)
-    }
+    class PredictionService {
+        - GradeRepository gradeRepository
+        - StudyLogRepository studyLogRepository
+        + PredictedScoreDto predictNextScore(Long studentId, Long subjectId)
+    }
 
-    class AiAnalysisResultRepository {
-        <<interface>>
-        + Optional~AiAnalysisResultEntity~ findByStudentId(Long studentId)
-    }
+    %% =========================
+    %% Controller Layer
+    %% =========================
+    class RecommendationController {
+        - AiRecommendationService aiRecommendationService
+        + ResponseEntity getMaterialRecommendations(Long studentId)
+        + ResponseEntity getGoalRoadmap(Long studentId)
+        + ResponseEntity getDailyReviewTasks(Long studentId)
+    }
 
-    class AiRecommendationRepository {
-        <<interface>>
-        + Optional~AiRecommendationEntity~ findByStudentId(Long studentId)
-    }
+    class AnalysisReportController {
+        - ReportAnalysisService reportAnalysisService
+        + ResponseEntity getScoreReport(Long studentId, Long testId)
+        + ResponseEntity getStudyPattern(Long studentId)
+        + ResponseEntity getStrengthAnalysis(Long studentId)
+    }
 
-    class ReviewPlanRepository {
-        <<interface>>
-        + List~ReviewPlanEntity~ findByStudentIdAndNextReviewDate(Long studentId, LocalDate date)
-    }
+    class StudyPlanController {
+        - StudyPlanningService studyPlanningService
+        - ReviewGenerationService reviewGenerationService
+        + ResponseEntity generateReviewPaper(Long studentId)
+        + ResponseEntity designProgressPlan(Long studentId, TargetGoalDto goalDto)
+    }
 
-    %% =========================
-    %% Service 계층
-    %% =========================
-    class AiDataInputService {
-        - AcademicRecordRepository academicRecordRepository
-        - SelfEvaluationRepository selfEvaluationRepository
-        - TeacherFeedbackRepository teacherFeedbackRepository
-        + void saveStudentGrade(GradeInputDto dto)
-        + void saveSelfEvaluation(EvaluationInputDto dto)
-        + void saveTeacherFeedback(FeedbackInputDto dto)
-    }
+    %% =========================
+    %% Relationships
+    %% =========================
+    StudentEntity "1" --* "0..*" GradeEntity : owns
+    StudentEntity "1" --* "0..*" StudyLogEntity : generates
+    StudentEntity "1" --* "0..*" WrongAnswerEntity : records
+    StudentEntity "1" --* "0..1" TargetGoalEntity : sets
 
-    class AiAnalysisService {
-        - AcademicRecordRepository academicRecordRepository
-        - AiAnalysisResultRepository aiAnalysisResultRepository
-        + void analyzeLearningPattern(Long studentId)
-        + void analyzeStrengthAndWeakness(Long studentId)
-        + Integer predictFutureGrowth(Long studentId)
-    }
+    GradeRepository ..> GradeEntity : manages
+    WrongAnswerRepository ..> WrongAnswerEntity : manages
+    TargetGoalRepository ..> TargetGoalEntity : manages
 
-    class AiRecommendationService {
-        - AiAnalysisResultRepository aiAnalysisResultRepository
-        - AiRecommendationRepository aiRecommendationRepository
-        - ReviewPlanRepository reviewPlanRepository
-        + AiRecommendationResponseDto generateCustomPlan(Long studentId)
-        + ReviewPlanResponseDto generateReviewQuestionsAndCycle(Long studentId)
-    }
+    AiRecommendationService --> GradeRepository : uses
+    AiRecommendationService ..> MaterialRecommendationDto : returns
+    ReportAnalysisService --> GradeRepository : uses
+    ReportAnalysisService ..> AnalysisReportDto : returns
+    ReviewGenerationService --> WrongAnswerRepository : uses
+    ReviewGenerationService ..> ReviewPaperDto : returns
+    PredictionService --> GradeRepository : uses
+    PredictionService ..> PredictedScoreDto : returns
 
-    class AiReportService {
-        - AcademicRecordRepository academicRecordRepository
-        - AiAnalysisResultRepository aiAnalysisResultRepository
-        + AiReportResponseDto generateComprehensiveReport(Long studentId)
-        + String generateGradeTrend(Long studentId)
-    }
-
-    %% =========================
-    %% Controller 계층
-    %% =========================
-    class AiDataController {
-        - AiDataInputService aiDataInputService
-        + ResponseEntity~Void~ inputGrade(GradeInputDto dto)
-        + ResponseEntity~Void~ inputSelfEvaluation(EvaluationInputDto dto)
-        + ResponseEntity~Void~ inputTeacherFeedback(FeedbackInputDto dto)
-    }
-
-    class AiReportController {
-        - AiAnalysisService aiAnalysisService
-        - AiReportService aiReportService
-        + ResponseEntity~AiReportResponseDto~ getAiReport(Long studentId)
-    }
-
-    class AiRecommendationController {
-        - AiRecommendationService aiRecommendationService
-        + ResponseEntity~AiRecommendationResponseDto~ getCustomPlan(Long studentId)
-        + ResponseEntity~ReviewPlanResponseDto~ getReviewPlan(Long studentId)
-    }
-
-    %% =========================
-    %% 관계 (Relationships)
-    %% =========================
-    StudentEntity "1" --> "0..*" AcademicRecordEntity : has
-    StudentEntity "1" --> "0..*" SelfEvaluationEntity : submits
-    StudentEntity "1" --> "0..*" TeacherFeedbackEntity : receives
-    StudentEntity "1" --> "0..1" AiAnalysisResultEntity : analyzedAs
-    StudentEntity "1" --> "0..1" AiRecommendationEntity : recommendedWith
-    StudentEntity "1" --> "0..*" ReviewPlanEntity : assignedTo
-
-    AiDataInputService --> AcademicRecordRepository : uses
-    AiDataInputService --> SelfEvaluationRepository : uses
-    AiDataInputService --> TeacherFeedbackRepository : uses
-
-    AiAnalysisService --> AcademicRecordRepository : uses
-    AiAnalysisService --> AiAnalysisResultRepository : uses
-
-    AiRecommendationService --> AiAnalysisResultRepository : uses
-    AiRecommendationService --> AiRecommendationRepository : uses
-    AiRecommendationService --> ReviewPlanRepository : uses
-    AiRecommendationService --> AiRecommendationResponseDto : returns
-    AiRecommendationService --> ReviewPlanResponseDto : returns
-
-    AiReportService --> AcademicRecordRepository : uses
-    AiReportService --> AiAnalysisResultRepository : uses
-    AiReportService --> AiReportResponseDto : returns
-
-    AiDataController --> AiDataInputService : uses
-    AiReportController --> AiAnalysisService : uses
-    AiReportController --> AiReportService : uses
-    AiRecommendationController --> AiRecommendationService : uses
-
+    RecommendationController --> AiRecommendationService : calls
+    AnalysisReportController --> ReportAnalysisService : calls
+    StudyPlanController --> ReviewGenerationService : calls
 ```
+
+#### Entity Class
+
+| Class Name        |	StudentEntity                      |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|
+|Class Description	| 학습 서비스의 주체가 되는 학생 정보를 저장하는 엔티티 |             |                 |                  |
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                |
+|Attribute	        | studentId                          |	Long         | Private     | 학생 PK                             |
+|Attribute          | name                               | String        | Private     | 학생 이름                          |
+|Attribute          | learningTendency                   | StudyTendency | Private     | 학생 학습 성향 (시각/청각 등)           |
+|Attribute          |	currentLevel                       | Integer       | Private     | 현재 학습 수준 (레벨)           |
+
+
+| Class Name	      | GradeEntity                        |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|
+| Class Description	| 학생이 입력한 시험 성적 데이터를 저장하는 엔티티	 |             |                 |                  |
+| 구분	            | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                      |
+| Attribute	        | gradeId                            | Long	         | Private	   | 성적 데이터 PK  | 
+| Attribute	        | studentId	                         | Long	         | Private	   | 학생 ID         | 
+| Attribute	        | subjectId	                         | Long	         | Private	   | 과목 ID          | 
+| Attribute        	| score	                             | Integer	     | Private	   | 시험 점수        | 
+| Attribute	        | testDate	                         | LocalDate	   | Private	   | 시험 일자        | 
+| Attribute	        | percentile	| Double	| Private	| 백분위| 
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |	
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | updateScore(Integer score)	       | void	         | 점수        | 수정	| 
+
+|Class Name	        | StudyLogEntity                     |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|
+|Class Description	| 학생의 학습 체류 시간 및 패턴 분석을 위한 로그 엔티티 |              |                 |                  |			
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | logId	                             | Long	         | Private	   | 학습 로그 PK| 
+| Attribute        	| studentId	                         | Long	         | Private	   | 학생 ID| 
+| Attribute        	| subjectId	                         | Long	         | Private	   | 학습 과목 ID| 
+| Attribute	        | durationMinutes	                   | Integer	     | Private     | 학습 지속 시간(분)| 
+| Attribute	        | startTime	                         | LocalDateTime | 	Private    | 	세션 시작 시간| 
+| Attribute	        | endTime	                           | LocalDateTime | 	Private    | 	세션 종료 시간| 
+
+| Class Name	      | WrongAnswerEntity	                 |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|	
+| Class Description |	자주 틀리는 문제 및 오답 노트 관리를 위한 엔티티 |             |                 |                  |			
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute        	| wrongAnswerId	                     | Long	         | Private	   | 오답 기록 PK| 
+| Attribute        	| studentId	                         | Long	         | Private	   | 학생 ID| 
+| Attribute	        | questionId	                       | Long	         | Private	   | 문제 ID| 
+| Attribute	        | failCount	                         | Integer	     | Private	   | 누적 오답 횟수| 
+| Attribute	        | lastFailedDate	                   | LocalDate	   | Private	   | 마지막 오답 일자| 
+
+| Class Name	      | TargetGoalEntity                   |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|			
+| Class Description | 학생이 설정한 학습 목표 및 진도 설계 기준 정보를 저장하는 엔티티                      |               |             |                           |			
+| 구분	            | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | goalId	                           | Long	         | Private     | 	목표 PK      | 
+| Attribute	        | studentId	                         | Long	         | Private	   | 학생 ID  | 
+| Attribute	        | targetKeyword	                     | String	       | Private     | 	목표 키워드 (예: 컴공과 합격)  | 
+| Attribute	        | targetDate	                       | LocalDate     | 	Private    | 	목표 달성(시험) 일자    | 
+| Attribute	        | dailyStudyHours	                   | Integer       | 	Private    | 	일일 목표 학습 시간  | 
+
+#### DTO Class
+
+| Class Name	      | MaterialRecommendationDto          |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|			
+| Class Description	| AI가 추천하는 맞춤형 학습 자료(문제집, 인강 등) 반환 응답 DTO                      |               |             |                           |			
+| 구분	            | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | materialId	                       | Long	         | Private	   | 학습 자료 PK| 
+| Attribute	        | title	                             | String	       | Private	   | 자료 제목| 
+| Attribute	        | materialType	                     | String	       | Private     | 자료 유형 (교재/인강)| 
+| Attribute	        | matchReason	                       | String	       | Private     | AI 추천 근거 (매칭 이유)| 
+
+| Class Name	      | AnalysisReportDto                  |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|		
+| Class Description	| 성적 분석 종합 리포트 및 월간 요약 반환 응답 DTO      |               |             |                           |			
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | subjectName	                       | String        | 	Private	   | 분석 과목명    | 
+| Attribute	        | myPercentile	                     | Double	       | Private	   | 사용자 백분위 | 
+| Attribute	        | averageScore	                     | Double        | 	Private	   | 전체 평균 점수  |   
+| Attribute	        | weakPointSummary	                 | String	       | Private     | 취약점 요약 텍스트  | 
+
+| Class Name	      | ReviewPaperDto                     |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|			
+| Class Description | 	취약 개념 기반으로 자동 생성된 가상 복습 문제지 응답 DTO                      |               |             |                           |			
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | paperId	                           | Long	         | Private	   | 문제지 식별자| 
+| Attribute	        | questions	                         | List	         | Private	   | 생성된 문항 리스트| 
+| Attribute	        | weakConcepts	                     | List	         | Private     | 	기반이 된 취약 개념 태그 목록|  |
+
+| Class Name	      | PredictedScoreDto			             |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|
+| Class Description	| AI 성적 예측 결과(예상 점수 구간 및 달성 확률) 응답 DTO                      |               |             |                           |			
+| 구분	            | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | expectedScoreMin	                 | Integer	     | Private	   | 예상 점수 최소치  |  |
+| Attribute	        | expectedScoreMax	                 | Integer	     | Private     | 예상 점수 최대치    |  |
+| Attribute	        | achievementProbability	           | Double	       | Private	   | 점수 달성 확률 (%)  |  |
+
+#### Repository Class
+
+| Class Name	      | GradeRepository                    |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|	
+| Class Description	| GradeEntity(성적)에 대한 저장/조회용 JPA Repository                      |               |             |                           |		
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | findByStudentIdOrderByTestDateAsc(Long studentId)	 |  List	      | 학생의 과거 성적을 시간순 정렬 조회 | |
+| Method	          | save(GradeEntity grade)	           | GradeEntity	 | 신규 성적 데이터 저장| |  |
+
+| Class Name	      | WrongAnswerRepository              |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|	
+| Class Description | 	WrongAnswerEntity(오답 노트) 조회용 JPA Repository                      |               |             |                           |		
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | findByStudentIdOrderByFailCountDesc(Long studentId)	| List| 	다빈도 오답을 내림차순으로 추출| | 
+
+| Class Name	      | TargetGoalRepository               |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|
+| Class Description | TargetGoalEntity(목표 정보) 조회용 JPA Repository		
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method            | 	findByStudentId(Long studentId)| 	Optional	| 학생의 설정된 학습 목표 조회| |  |
+
+#### Service Class
+
+| Class Name	      | AiRecommendationService                  |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|			
+| Class Description | 맞춤 학습 자료, 공부법, 목표 로드맵, 복습 주기를 AI 추천하는 서비스                      |               |             |                           |			
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | studentRepository	                 | StudentRepository	| Private / Final	| 학생 정보 조회용| 
+| Attribute	        | gradeRepository	                   | GradeRepository	| Private / Final	| 성적 데이터 조회용| 
+| Attribute	        | materialRepository	               | StudyMaterialRepository	| Private / Final	| 교재/인강 DB 조회용| 
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | recommendMaterials(Long studentId)	| List	| 성적/난이도 기반 최적화 콘텐츠 리스트 반환	| | 
+| Method	          | suggestStudyMethod(Long studentId, Long subjectId)	| StudyMethodDto	| 성향 데이터 기반 맞춤 공부법 텍스트 반환	| | 
+| Method	          | recommendGoalRoadmap(Long studentId)	| StudyRoadmapDto	| 우수 그룹 군집 분석을 통한 학습 커리큘럼 로드맵 반환	| | 
+| Method	          | recommendDailyReview(Long studentId)	| List	| 망각 곡선 이론 기반 당일 최우선 복습 대상 반환	| | 
+
+| Class Name	      | ReportAnalysisService              |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|		
+| Class Description	| 성적 분석, 학습 패턴 분석, 강점 분석, 요약 리포트 로직을 처리하는 서비스                      |               |             |                           |			
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute        	| gradeRepository	                   | GradeRepository	| Private / Final	| 성적 통계 대조용| 
+| Attribute	        | studyLogRepository               	 | StudyLogRepository	| Private / Final	| 학습 시간 패턴 집계용| 
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | generateScoreReport(Long studentId, Long testId)	| AnalysisReportDto	| 전체 평균 대비 개인의 백분위 종합 리포트 산출	| | 
+| Method	          | analyzeStudyPattern(Long studentId)	| StudyPatternDto	| 누적 로그 기반 집중 시간대/과목 밸런스 도출	| | 
+| Method	          | analyzeStrengths(Long studentId)	| StrengthAnalysisDto	| 정답률/시간 기반 안정적인 강점 단원 추출	| | 
+
+| Class Name	      | ReviewGenerationService            |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|		
+| Class Description	| 오답 DB 스캔 및 변형 문항을 조합하여 복습 문제지를 자동 생성하는 서비스                      |               |             |                           |			
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | wrongAnswerRepository	             | WrongAnswerRepository	| Private / Final	| 취약 개념 식별용| 
+| Attribute	        | questionRepository	               | QuestionRepository	| Private / Final	| 유사 변형 문제 추출용| 
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | generateCustomReviewPaper(Long studentId)	| ReviewPaperDto	| 빈도수 높은 취약 개념을 모아 맞춤형 문제지 생성 반환	|  |
+
+| Class Name	      | PredictionService                  |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|		
+|Class Description	| 성적 상승 기울기와 학습량 데이터를 머신러닝 모델에 대입해 점수를 예측하는 서비스                      |               |             |                           |			
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | gradeRepository	                   | GradeRepository	| Private / Final	| 누적 성적 추세 파악용| 
+| Attribute	        | studyLogRepository	               | StudyLogRepository	| Private / Final	| 최근 2주간 일일 학습량 분석용| 
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |	
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | predictNextScore(Long studentId, Long subjectId)  | 	PredictedScoreDto  | 	타겟 시험의 예상 점수 구간 및 확률 도출	| | 
+
+#### Controller Class
+
+| Class Name	      | RecommendationController           |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|		
+| Class Description	| AI 기반 학습 자료 추천, 로드맵 제공 API를 담당하는 컨트롤러	                      |               |             |                           |		
+| 구분	            | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | aiRecommendationService	           | AiRecommendationService	| Private / Final	| 추천 기능 로직 서비스| 
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | getMaterialRecommendations(Long studentId)	| ResponseEntity<List>	  | 학생 수준에 맞는 최적화된 자료 리스트 응답	| | 
+| Method  	        | getGoalRoadmap(Long studentId)	| ResponseEntity	| 목표 기반 단계별 학습 커리큘럼 로드맵 응답	| | 
+| Method	          | getDailyReviewTasks(Long studentId)	| ResponseEntity<List>	| 당일 최우선 복습 대상 목록 응답	| | 
+
+| Class Name	      | AnalysisReportController           |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|		
+| Class Description	  | 성적 분석, 패턴 분석, 월간 리포트 API를 제공하는 컨트롤러	                      |               |             |                           |		
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | reportAnalysisService	             | ReportAnalysisService	| Private / Final	| 데이터 분석 로직 서비스| 
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | getScoreReport(Long studentId, Long testId)	| ResponseEntity	| 특정 시험의 종합 백분위/비교 리포트 응답	| | 
+| Method	          | getStudyPattern(Long studentId)	   | ResponseEntity	| 집중 시간대 및 과목 밸런스 분석 결과 응답	| | 
+| Method	          | getStrengthAnalysis(Long studentId)| ResponseEntity	| 정답률이 높은 사용자 강점 단원 결과 응답	| | 
+
+|Class Name	        | StudyPlanController                |               |             |                           |
+| ----------------- | ---------------------------------- | ------------- | ----------- | --------------------------|		
+| Class Description	| 진도 설계 및 오답 복습 문제지 생성 API를 제공하는 컨트롤러                      |               |             |                           |
+| 구분	            | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	        | studyPlanningService	             | StudyPlanningService	        | Private / Final	| 진도 설계 로직 서비스  | 
+| Attribute	        | reviewGenerationService	           | ReviewGenerationService	    | Private / Final	| 복습 문제 생성 서비스| 
+|구분	              | Name	                             | Type	         | Visibility  | Description                      |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Method	          | generateReviewPaper(Long studentId)|	ResponseEntity  |	취약 개념 기반의 맞춤형 가상 문제지 응답|	       | |
+| Method	          | designProgressPlan(Long studentId, TargetGoalDto goalDto)|	ResponseEntity|	목표일에 맞춘 일일 최적 학습 분량 분배 응답 |         |
 
 
 ### GPS
