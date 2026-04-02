@@ -4013,6 +4013,601 @@ classDiagram
 | Method            | tagDropoff(Long studentId, String cardUid)   | ResponseEntity<Void>                            | NFC 태깅 기반 학생 하차 처리   |              |
 | Method            | getPlannedStudents(Long vehicleId)           | ResponseEntity<List<PlannedBoardingStudentDto>> | 차량 기준 탑승 예정 학생 목록 조회 |              |
 
+### 게시판
+```mermaid
+classDiagram
+    direction LR
+
+    class User {
+        +Long userId
+        +String name
+        +String phoneNumber
+        +String password
+        +String role
+    }
+    
+    class ParentUser
+    class Instructor
+    class Administrator
+
+    class Board {
+        +Long boardId
+        +String name
+        +String description
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class Tag {
+        +Long tagId
+        +String name
+    }
+
+    class Post {
+        +Long postId
+        +String title
+        +String content
+        +Boolean isAnonymous
+        +Int viewCount
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class Attachment {
+        +Long attachmentId
+        +String fileUrl
+        +String fileType
+        +Date uploadedAt
+    }
+
+    class Comment {
+        +Long commentId
+        +String content
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class Reaction {
+        +Long reactionId
+        +String type
+        +Date createdAt
+    }
+
+    class Favorite {
+        +Long favoriteId
+        +Date createdAt
+    }
+
+    %% 상속 구조
+    User <|-- ParentUser
+    User <|-- Instructor
+    User <|-- Administrator
+
+    %% 작성자 / 생성자 관계
+    User "1" --> "0..*" Board : creates
+    User "1" --> "0..*" Post : writes
+    User "1" --> "0..*" Comment : writes
+    User "1" --> "0..*" Reaction : reacts
+    User "1" --> "0..*" Favorite : bookmarks
+
+    %% 게시판 내부 구조
+    Board "1" --> "0..*" Post : contains
+    Board "1" --> "0..*" Favorite : bookmarked by
+    Board "0..*" --> "0..*" Tag : categorized by
+
+    %% 게시글 연관 관계
+    Post "1" --> "0..*" Comment : has
+    Post "1" --> "0..*" Reaction : receives
+    Post "1" --> "0..*" Attachment : includes
+    Post "0..*" --> "0..*" Tag : tagged with
+
+```
+#### Entity Class
+
+| Class Name        | UserEntity                                                |        |            |                      |
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description | 시스템 사용자 정보를 저장하는 상위 엔티티. 학부모, 학원 강사, 관리자 클래스의 공통 속성을 관리한다. |        |            |                      |
+| 구분                | Name                                                       | Type   | Visibility | Description          |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | userId                                                     | Long   | Private    | 사용자 식별자              |
+| Attribute         | name                                                       | String | Private    | 사용자 이름               |
+| Attribute         | phoneNumber                                                | String | Private    | 휴대폰 번호               |
+| Attribute         | password                                                   | String | Private    | 로그인 비밀번호             |
+| Attribute         | role                                                       | String | Private    | 사용자 역할(학부모, 강사, 관리자) |
+
+| Class Name        | ParentUserEntity                            |      |            |                   |
+| ----------------- | ---------------------------------- | ---- | ---------- | ----------------- |
+| Class Description | 학부모 사용자 정보를 나타내는 엔티티. User를 상속받는다. |      |            |                   |
+| 구분                | Name                               | Type | Visibility | Description       |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | -                                  | -    | -          | User의 속성을 상속받아 사용 |
+
+| Class Name        | InstructorEntity                   |      |            |                   |
+| ----------------- | ------------------------------------ | ---- | ---------- | ----------------- |
+| Class Description | 학원 강사 사용자 정보를 나타내는 엔티티. User를 상속받는다. |      |            |                   |
+| 구분                | Name                                 | Type | Visibility | Description       |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | -                                    | -    | -          | User의 속성을 상속받아 사용 |
+
+| Class Name        | AdministratorEntity                     |      |            |                   |
+| ----------------- | ---------------------------------- | ---- | ---------- | ----------------- |
+| Class Description | 관리자 사용자 정보를 나타내는 엔티티. User를 상속받는다. |      |            |                   |
+| 구분                | Name                               | Type | Visibility | Description       |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | -                                  | -    | -          | User의 속성을 상속받아 사용 |
+
+| Class Name        | BoardEntity                      |      |            |                   |
+| ----------------- | ---------------------------------- | ---- | ---------- | ----------------- |
+| Class Description | 게시판 정보를 저장하는 엔티티. 게시글(Post)을 포함하며, 생성자(User) 정보를 가진다. |      |            |                   |
+| 구분                | Name                               | Type | Visibility | Description       |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | boardId                         | Long      | Private          | 게시판 식별자  |
+| Attribute         | name                             | String    | Private          | 게시판 이름  |
+| Attribute         | description                      | String    | Private          | 게시판 설명 |
+| Attribute         | createdAt                        | Date   | Private          | 생성 일시 |
+| Attribute         | updatedAt                      | Date    | Private          | 수정 일시  |
+| Attribute         | creator                           | User    | Private          | 게시판 생성자  |
+| Relation          | posts                             | List<Post>    | Private          | 게시판에 포함된 게시글 목록 |
+
+| Class Name        | PostEntity                      |      |            |                   |
+| ----------------- | ---------------------------------- | ---- | ---------- | ----------------- |
+| Class Description | 게시판 내 게시글 정보를 저장하는 엔티티. 작성자(User), 게시판(Board), 첨부파일, 댓글과 연관된다. |      |            |                   |
+| 구분                | Name                               | Type | Visibility | Description       |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | postId                     | Long      | Private          | 게시글 식별자  |
+| Attribute         | title                            | String    | Private          | 게시글 제목  |
+| Attribute         | content                      | String    | Private          | 게시글 내용 |
+| Attribute         | isAnonymous                        | Boolean   | Private          | 작성 일시 |
+| Attribute         | author                           | User    | Private          | 게시글 작성자  |
+| Attribute         | viewCount                            | Integer    | Private          | 조회수 |
+| Attribute         | createdAt                      | Date    | Private          | 작성 일시 |
+| Attribute         | updatedAt                      | Date    | Private          | 수정 일시  |
+| Attribute         | board                         | Board      | Private          | 게시판 참조  |
+| Relation         | comments                     | List<Comment>      | Private          | 게시글에 달린 댓글 목록  |
+| Relation         | reactions                       | List<Reaction>      | Private          | 게시글에 대한 사용자 반응 목록  |
+| Relation         | attachments                   | List<Attachment>      | Private          | 게시글에 첨부된 파일 목록  |
+| Relation         | tags                      | List<Tag>      | Private          | 게시글의 태그 목록  |
+
+| Class Name        | CommentEntity                                                |        |            |                      |
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description | 게시글에 작성된 댓글 정보를 저장하는 엔티티. 작성자(User)와 게시글(Post)에 연관된다.|        |            |                      |
+| 구분                | Name                                                       | Type   | Visibility | Description          |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | commentId                      | Long   | Private    | 댓글 식별자           |
+| Attribute         | content                            | String | Private    | 댓글 내용            |
+| Attribute         | createdAt                         | Date | Private    | 작성 일시               |
+| Attribute         | updatedAt                       | Date | Private    | 수정 일시             |
+| Attribute         | user                                | User | Private    | 댓글 작성자 |
+| Attribute         | post                               | Post | Private    | 댓글이 속한 게시글 |
+
+| Class Name        | CommentEntity                                                |        |            |                      |
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description | 게시글에 대한 사용자의 반응(좋아요, 싫어요 등)을 저장하는 엔티티. |        |            |               |
+| 구분                | Name                                                       | Type   | Visibility | Description          |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | reactionId                       | Long   | Private    | 반응 식별자           |
+| Attribute         | type                               | String | Private    | 반응 형(LIKE, DISLIKE 등)            |
+| Attribute         | createdAt                         | Date | Private    | 작성 일시               |
+| Attribute         | user                                | User | Private    | 반응 작성자 |
+| Attribute         | post                               | Post | Private    | 반응 대상 게시글 |
+
+| Class Name        | FavoriteEntity                                                |        |            |                      |
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description | 사용자가 즐겨찾기한 게시판 정보를 저장하는 엔티티. |        |            |               |
+| 구분                | Name                                                       | Type   | Visibility | Description          |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | favoriteId                      | Long   | Private    | 즐겨찾기 식별자       |
+| Attribute         | user                                | User | Private    | 즐겨찾기 등록자 |
+| Attribute         | createdAt                         | Date | Private    | 작성 일시               |
+| Attribute         | board                               | Board | Private    | 즐겨찾기된 게시판  |
+
+| Class Name        | AttachmentEntity                                                |        |            |                      |
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description | 게시글에 첨부된 파일 정보를 저장하는 엔티티.  |        |            |               |
+| 구분                | Name                                                       | Type   | Visibility | Description          |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute         | attachmentId                      | Long   | Private    | 첨부 파일 식별자       |
+| Attribute         | fileUrl                                | String | Private    | 파일 경로 또는 URL |
+| Attribute         | fileType                               | String | Private    | 파일 형식 |
+| Attribute         | uploadAt                         | Date | Private    | 업로드 일시               |
+| Attribute         | post                               | Post | Private    | 첨부된 게시글  |
+
+#### DTO Class
+
+| Class Name	| UserDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 사용자(User) 정보를 외부로 전달할 때 사용하는 데이터 전송 객체. 비밀번호 등 민감 정보는 제외된다. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| userId	| Long	| Private	| 사용자 식별자 |
+| Attribute	| name	| String	| Private	| 사용자 이름 |
+| Attribute	| phoneNumber	| String	| Private	| 휴대폰 번호 |
+| Attribute	| role	| String	| Private	| 사용자 역할 (학부모, 강사, 관리자) |
+
+| Class Name	| BoardDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시판(Board) 정보 요청 및 응답 시 사용되는 데이터 전송 객체. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| boardId	| Long	| Private	| 게시판 식별자 |
+| Attribute	| name	| String	| Private	| 게시판 이름 |
+| Attribute	| description	| String	| Private	| 게시판 설명 |
+| Attribute	| creatorName	| String	| Private	| 게시판 생성자 이름 |
+| Attribute	| createdAt	| Date	| Private	| 생성 일시 |
+| Attribute	| updatedAt	| Date	| Private	| 수정 일시 |
+
+| Class Name	| PostDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글(Post)의 등록, 수정, 상세 조회에 사용되는 데이터 전송 객체. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| postId	| Long	| Private	| 게시글 식별자 |
+| Attribute	| title	| String	| Private	| 게시글 제목 |
+| Attribute	| content	| String	| Private	| 게시글 내용 |
+| Attribute	| isAnonymous	| Boolean	| Private	| 익명 여부 |
+| Attribute	| viewCount	| Integer	| Private	| 조회 수 |
+| Attribute	| authorName	| String	| Private	| 작성자 이름 |
+| Attribute	| boardId	| Long	| Private	| 소속 게시판 식별자 |
+| Attribute	| createdAt	| Date	| Private	| 작성 일시 |
+| Attribute	| updatedAt	| Date	| Private	| 수정 일시 |
+
+| Class Name	| CommentDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 댓글(Comment)의 등록, 수정, 조회 요청/응답 시 사용되는 데이터 전송 객체. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| commentId	| Long	| Private	| 댓글 식별자 |
+| Attribute	| postId	| Long	| Private	| 대상 게시글 식별자 |
+| Attribute	| userName	 | String	| Private	| 댓글 작성자 이름 |
+| Attribute	| content	| String	| Private	| 댓글 내용 |
+| Attribute	| createdAt	| Date	| Private	| 작성 일시 |
+| Attribute	| updatedAt | Date	| Private	| 수정 일시 |
+
+| Class Name	| ReactionDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글에 대한 반응(좋아요, 싫어요 등)을 전달하기 위한 데이터 전송 객체. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| reactionId 	| Long	| Private	| 반응 식별자 |
+| Attribute	| postId	| Long	| Private	| 대상 게시글 ID |
+| Attribute	| userId	| Long	| Private	| 반응 생성자 ID |
+| Attribute	| type 	| String	| Private	| 반응 유형 (LIKE, DISLIKE 등) |
+| Attribute	| createdAt	| Date	| Private	| 반응 생성 시각 |
+
+| Class Name	| FavoriteDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 사용자의 게시판 즐겨찾기(Favorite) 상태를 요청/응답할 때 사용하는 데이터 전송 객체. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| favoriteId	| Long	| Private	| 즐겨찾기 식별자 |
+| Attribute	| userId	| Long	| Private	| 사용자 ID |
+| Attribute	| boardId	| Long	| Private	| 게시판 ID |
+| Attribute	| boardName	| String	| Private	| 즐겨찾기된 게시판 이름 |
+| Attribute	| createdAt	| Date	| Private	| 등록 일시 |
+
+| Class Name	| AttachmentDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글에 첨부된 파일 정보를 표현하는 DTO. 업로드/조회/삭제 응답에 사용된다. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| attachmentId	| Long	| Private	| 첨부 파일 식별자 |
+| Attribute	| postId	| Long	| Private	| 첨부 대상 게시글 ID |
+| Attribute	| fileUrl	| String	| Private	| 파일 경로 혹은 다운로드 URL |
+| Attribute	| fileType	| String	| Private	| 파일 형식 (jpg, pdf, mp4 등) |
+| Attribute	| uploadedAt	| Date	| Private	| 업로드 일시 |
+
+| Class Name	| TagDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글이나 게시판에 연결되는 태그 정보를 전달하는 데이터 객체. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| tagId	| Long	| Private	| 태그 식별자 |
+| Attribute	| name	| String	| Private	| 태그 이름 |
+
+#### Repository Class
+
+| Class Name	| UserRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 사용자 정보를 DB에 접근하기 위한 JPA Repository 인터페이스. 사용자 인증, 역할별 조회 등 기능 제공. |	|	|	|
+| 구분 	| Name	| Type	| Visibility   	| Description   |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| JpaRepository<User, Long> 	| Interface	| Public	| User 엔티티 CRUD 기능 상속 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| findByPhoneNumber(String phoneNumber)	| Optional<User>	| 전화번호로 사용자 단일 조회	|
+| Method	| findByRole(String role) 	| List<User>	| 사용자 역할별 목록 조회	|
+
+| Class Name	| BoardRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시판 엔티티(Board)에 대한 DB 접근을 담당하는 JPA Repository. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| JpaRepository<Board, Long>	| Interface	| Public	| Board 엔티티 CRUD 기능 상속 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         | 
+| Method	| findByName(String name)	| Optional<Board>	| 게시판 이름으로 게시판 조회	|
+| Method	| findByCreator(User creator)	| List<Board>	| 특정 생성자가 만든 게시판 목록 조회	|
+
+| Class Name	| PostRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글 데이터(Post) 저장, 수정, 조회를 담당하는 Repository. |	|	|	|
+| 구분 	| Name	|Type 	| Visibility 	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| JpaRepository<Post, Long> 	| Interface	| Public	| Post 엔티티 CRUD 기능 상속 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| findByBoard(Board board)	| List<Post>	| 특정 게시판의 모든 게시글 조회	|
+| Method	| findByAuthor(User author)	| List<Post>	| 특정 사용자가 작성한 게시글 조회	 |
+| Method	| findByTitleContaining(String keyword)	| List<Post>	| 게시글 제목 키워드 검색	|
+
+| Class Name	| CommentRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글 댓글(Comment)에 대한 데이터 접근 기능을 제공하는 Repository. |	|	|	|
+| 구분 	| Name	| Type	| Visibility 	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| JpaRepository<Comment, Long>  	| Interface	| Public	| Comment 엔티티 CRUD 기능 상속 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| findByPost(Post post)	| List<Comment>	| 특정 게시글의 댓글 목록 조회	|
+| Method	| findByUser(User user)	| List<Comment>	| 특정 사용자가 작성한 댓글 목록 조회	|
+
+| Class Name	| ReactionRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글 반응(좋아요, 싫어요 등) 정보를 DB에서 CRUD 처리하는 Repository. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| JpaRepository<Reaction, Long>   	| Interface	| Public	| Reaction 엔티티 CRUD 기능 상속 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| findByPost(Post post) 	| List<Reaction>	| 게시글별 반응 목록 조회	|
+| Method	| findByUser(User user)	| List<Reaction>	| 특정 사용자의 반응 내역 조회	|
+| Method	| findByUserAndPost(User user, Post post)	| Optional<Reaction>	| 사용자가 남긴 특정 게시글의 반응 조회	|
+
+| Class Name	| FavoriteRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 사용자 즐겨찾기(Favorite) 정보를 관리하는 Repository. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| JpaRepository<Favorite, Long>	| Interface	| Public	| Favorite 엔티티 CRUD 기능 상속 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| findByUser(User user)	| List<Favorite>	| 사용자의 즐겨찾기 목록 조회	|
+| Method	| findByBoardAndUser(Board board, User user)	| Optional<Favorite>	| 특정 사용자의 게시판 즐겨찾기 여부 조회	|
+
+| Class Name	| AttachmentRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글 첨부파일(Attachment) 정보를 CRUD 처리하는 Repository. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| JpaRepository<Attachment, Long>	| Interface	| Public	| Attachment 엔티티 CRUD 기능 상속 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| findByPost(Post post)	| List<Attachment>	| 게시글별 첨부파일 목록 조회	|
+
+| Class Name	| TagRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 태그(Tag) 데이터 관리 및 게시글/게시판 연결을 위한 Repository. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| JpaRepository<Tag, Long>	| Interface	| Public	| Tag 엔티티 CRUD 기능 상속 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| findByName(String name)	| Optional<Tag>	| 태그 이름으로 조회	|
+| Method	| findByPosts_PostId(Long postId)	| List<Tag> 	| 특정 게시글에 연결된 태그 목록 조회 |
+
+#### Service Class
+
+| Class Name	| BoardService |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시판 생성, 수정, 조회 등의 비즈니스 로직을 처리하는 서비스 클래스. |	|	|	|
+| 구분	 | Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| boardRepository	| BoardRepository	| Private / Final	| 게시판 데이터 접근 객체 |
+| Attribute	| userRepository	| UserRepository	| Private / Final	| 게시판 생성자 검증 객체 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| createBoard(Long userId, BoardDto dto)	| Board	| 사용자 기반으로 게시판 생성	|
+| Method	| getAllBoards()	| List<Board>	| 전체 게시판 목록 조회	|
+| Method	| getBoardById(Long boardId)	| Board	| 특정 게시판 상세 조회	|
+| Method	| updateBoard(Long boardId, BoardDto dto)	| Board	| 게시판 정보 수정	|
+| Method	| deleteBoard(Long boardId)	| void 	| 게시판 삭제	|
+
+| Class Name	| PostService |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글 작성, 수정, 삭제, 조회 등의 핵심 비즈니스 로직을 처리하는 서비스 클래스. |	|	|	|
+| 구분	 | Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| postRepository		| PostRepository		| Private / Final	| 게시글 데이터 접근 객체 |
+| Attribute	| boardRepository	| BoardRepository	| Private / Final	| 게시판 검증용 Repository |
+| Attribute	| userRepository		| UserRepository		| Private / Final	| 게시글 작성자 검증용 Repository |
+| 구분	 | Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---       |
+| Method	| createPost(Long userId, Long boardId, PostDto dto)	 | Post	| 게시글 작성	|
+| Method	| getPostsByBoard(Long boardId)	| List<Post>	| 특정 게시판의 게시글 목록 조회	|
+| Method	| getPostById(Long postId)	| Post 	| 특정 게시글 상세 조회	|
+| Method	| updatePost(Long postId, PostDto dto)	| Post 	| 게시글 수정	|
+| Method	| deletePost(Long postId)	| void		| 게시글 삭제	|
+
+| Class Name	| CommentService |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글에 작성된 댓글 생성, 조회, 수정, 삭제 로직을 처리하는 서비스 클래스. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| commentRepository	| CommentRepository	| Private / Final	| 댓글 데이터 접근 객체 |
+| Attribute	| postRepository	| PostRepository	| Private / Final	| 댓글이 속한 게시글 조회용 Repository |
+| Attribute	| userRepository 	| UserRepository 	| Private / Final	| 작성자 검증용 Repository |
+| 구분 | Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| createComment(Long postId, Long userId, CommentDto dto)	| Comment 	| 댓글 작성	|
+| Method	| getCommentsByPost(Long postId)	| List<Comment>	| 게시글별 댓글 조회	|
+| Method	| updateComment(Long commentId, CommentDto dto)	| Comment 	| 댓글 수정	|
+| Method	| deleteComment(Long commentId)	| void 	| 댓글 삭제	|
+
+| Class Name	| ReactionService	|	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글 좋아요/싫어요 등 반응 데이터를 처리하는 서비스 클래스. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| reactionRepository	| ReactionRepository	| Private / Final	| 사용자 반응 데이터 접근 객체 |
+| Attribute 	| postRepository 	| PostRepository	| Private / Final	| 대상 게시글 검증용 Repository |
+| Attribute	| userRepository	| UserRepository	| Private / Final	| 반응 생성자 검증 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         | 
+| Method	| addReaction(Long postId, Long userId, String type)	| Reaction	| 특정 게시글에 반응 추가	|
+| Method	| removeReaction(Long reactionId) 	| void 	| 반응 제거	|
+| Method	| getReactionsByPost(Long postId)	| List<Reaction>	| 게시글별 반응 조회	|
+| Method	| getReactionsByUser(Long userId)	| List<Reaction>	| 사용자별 반응 조회	|
+
+| Class Name	| FavoriteService |		|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 사용자의 게시판 즐겨찾기 등록, 조회, 삭제 로직을 처리하는 서비스 클래스. |	|	|	|
+| 구분 | Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| favoriteRepository	| FavoriteRepository	| Private / Final	| 즐겨찾기 데이터 접근 객체 |
+| Attribute	| userRepository	| UserRepository	| Private / Final	| 즐겨찾기를 수행하는 사용자 검증 |
+| Attribute	| boardRepository	| BoardRepository	| Private / Final	| 즐겨찾기 대상 게시판 검증 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| addFavorite(Long userId, Long boardId) 	| Favorite 	| 즐겨찾기 추가	|
+| Method	| removeFavorite(Long favoriteId) 	| void 	| 즐겨찾기 삭제	|
+| Method	| getFavoritesByUser(Long userId) 	| List<Favorite>	| 사용자별 즐겨찾기 목록 조회	|
+
+| Class Name	| AttachmentService |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글에 첨부파일 업로드, 다운로드, 삭제 기능을 처리하는 서비스 클래스. |	|	|	|
+| 구분 	| Name	| Type	| Visibility 	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| attachmentRepository | AttachmentRepository	| Private / Final	| 첨부파일 데이터 접근 객체 |
+| Attribute	| postRepository	| PostRepository	| Private / Final	| 첨부 대상 게시글 검증 |
+| Attribute	| fileStorageService	| FileStorageService	| Private / Final	| 파일 저장 및 삭제 처리 서비스 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---      |
+| Method	| uploadAttachment(Long postId, MultipartFile file)	| Attachment	| 파일 업로드	|
+| Method	| getAttachmentsByPost(Long postId)	| List<Attachment>	| 게시글별 첨부파일 목록 조회	|
+| Method	| deleteAttachment(Long attachmentId)	| void 	| 첨부파일 삭제	|
+| Method	| downloadAttachment(Long attachmentId)	| Resource 	| 파일 다운로드 반환	|
+
+| Class Name	| TagService |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글/게시판에 태그를 생성, 삭제, 연결하기 위한 비즈니스 로직을 처리하는 서비스 클래스. |	|	|	|
+| 구분 	| Name	| Type	| Visibility   	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| tagRepository	| TagRepository	| Private / Final	| 태그 데이터 접근 객체 |
+| Attribute	| postRepository	| PostRepository	| Private / Final	| 게시글 연관 검증 |
+| Attribute	| boardRepository	| BoardRepository	| Private / Final	| 게시판 연관 검증 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---      |
+| Method	| createTag(TagDto dto)	 | Tag 	| 새 태그 생성	|
+| Method	| deleteTag(Long tagId) 	| void	 | 태그 삭제	 |
+| Method	| getAllTags()	| List<Tag> 	| 전체 태그 목록 조회	|
+| Method	| assignTagToPost(Long postId, Long tagId)	| void 	| 특정 게시글에 태그 연결	|
+| Method	| removeTagFromPost(Long postId, Long tagId)	| void	 | 게시글에서 태그 제거 	|
+
+#### Controller Class
+
+| Class Name	| BoardController  	|	|	| 	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |	
+| Class Description	| 게시판 생성, 조회 등 게시판 관련 요청을 처리하는 REST 컨트롤러. |	|	|	|	
+| 구분 	| Name	| Type 	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| boardService	| BoardService	| Private / Final	| 게시판 관련 비즈니스 로직 서비스 |
+| Attribute	| userService 	| UserService	| Private / Final	| 사용자 조회 및 검증 서비스 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---        |
+| Method	| createBoard(BoardDto dto, Long userId)	| ResponseEntity<BoardDto>	| 게시판 생성 요청 처리	|
+| Method	| getAllBoards()	| ResponseEntity<List<BoardDto>>	| 전체 게시판 목록 조회	|
+| Method	| getBoard(Long boardId)	| ResponseEntity<BoardDto>	| 특정 게시판 상세 조회	|
+
+| Class Name	| PostController	|	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	 | 게시글 등록, 조회, 수정, 삭제 등 게시글 관련 요청을 처리하는 컨트롤러.	|	|	|	|
+| 구분 	| Name	| Type 	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| postService	| PostService	| Private / Final	| 게시글 비즈니스 로직 처리 서비스 |
+| Attribute	| boardService	| BoardService	| Private / Final	| 게시판 검증 및 연동 서비스 |
+| Attribute	| userService	 	| UserService	| Private / Final	| 작성자 검증 서비스 |
+| 구분		| Name	| Return Type	| Description |
+| ---	              | ---                                | ---           | ---      |
+| Method	| createPost(Long boardId, Long userId, PostDto dto)	| ResponseEntity<PostDto>	| 게시글 생성 요청 처리	|
+| Method	| getPosts(Long boardId)	| ResponseEntity<List<PostDto>>	| 특정 게시판 내 게시글 목록 조회	|
+| Method	| getPostDetail(Long postId)	| ResponseEntity<PostDto>	| 게시글 상세 조회	|
+| Method	| updatePost(Long postId, PostDto dto)	| ResponseEntity<PostDto>	| 게시글 수정 요청 처리	|
+| Method	| deletePost(Long postId)	| ResponseEntity<Void>	| 게시글 삭제 요청 처리	|
+
+| Class Name	| CommentController	|	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+|Class Description	| 게시글에 대한 댓글 작성, 조회, 수정, 삭제 요청을 처리하는 REST 컨트롤러. |	|	|	|
+| 구분		| Name	| Type		| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| commentService	| CommentService	| Private / Final	| 댓글 비즈니스 로직 처리 서비스 |
+| Attribute	| postService	| PostService	| Private / Final	| 게시글 유효성 검증 서비스 |
+| Attribute	| userService		| UserService	| Private / Final	| 댓글 작성자 검증 서비스 |
+| 구분	 | Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---    |
+| Method	| createComment(Long postId, Long userId, CommentDto dto)	| ResponseEntity<CommentDto>	| 댓글 생성 요청 처리	|
+| Method	| getComments(Long postId)	| ResponseEntity<List<CommentDto>>	| 게시글별 댓글 목록 조회	|
+| Method	| updateComment(Long commentId, CommentDto dto)	| ResponseEntity<CommentDto>	| 댓글 수정 요청 처리	|
+| Method	| deleteComment(Long commentId)	| ResponseEntity<Void>	| 댓글 삭제 요청 처리 |
+
+| Class Name	| ReactionController |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 게시글에 대한 좋아요/싫어요 등 반응(Reaction) 요청을 처리하는 REST 컨트롤러. |	|	|	|
+| 구분		| Name	| Type		| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| reactionService	| ReactionService	| Private / Final	| 게시글 반응 비즈니스 로직 서비스 |
+| Attribute	| postService	| PostService	| Private / Final	| 게시글 상태 검증 및 연동 서비스 |
+| Attribute	| userService 	| UserService	| Private / Final	| 반응을 생성한 사용자 검증 서비스 |
+| 구분	 | Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         | 
+| Method	| addReaction(Long postId, Long userId, String type)	| ResponseEntity<ReactionDto>	| 특정 게시글에 사용자의 반응(좋아요 등) 추가	|
+| Method	| removeReaction(Long reactionId)	| ResponseEntity<Void>	| 사용자가 남긴 반응 제거	|
+| Method	| getPostReactions(Long postId)	| ResponseEntity<List<ReactionDto>>	| 게시글의 전체 반응 조회	|
+| Method	| getUserReactions(Long userId)	| ResponseEntity<List<ReactionDto>>	| 특정 사용자가 남긴 반응 조회	|
+
+| Class Name	| FavoriteController	|	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description 	| 사용자의 즐겨찾기(Board Favorite) 등록 및 해제, 조회 요청을 처리하는 컨트롤러. |	|	|	|
+| 구분	 | Name	| Type 	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| favoriteService	| FavoriteService	| Private / Final	| 즐겨찾기 비즈니스 로직 서비스 |
+| Attribute	| boardService	| BoardService	| Private / Final	| 대상 게시판 유효성 검증 서비스 |
+| Attribute	| userService 	| UserService	| Private / Final	| 즐겨찾기 등록자 검증 서비스 |
+| 구분	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         | 
+| Method	| addFavorite(Long userId, Long boardId)	| ResponseEntity<FavoriteDto>	| 사용자가 특정 게시판을 즐겨찾기로 등록	|
+| Method	| removeFavorite(Long favoriteId)	| ResponseEntity<Void> 	| 즐겨찾기 해제 요청	|
+| Method	| getUserFavorites(Long userId)	| ResponseEntity<List<FavoriteDto>>	| 사용자의 전체 즐겨찾기 목록 조회	|
+
+| Class Name	| AttachmentController |		|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	 | 게시글에 첨부된 파일(Attachment) 업로드, 다운로드, 삭제 요청을 처리하는 REST 컨트롤러. |	|	|	|
+| 구분	 | Name	| Type 	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| attachmentService	| AttachmentService	| Private / Final	| 첨부 파일 업로드/관리 비즈니스 로직 서비스 |
+| Attribute	| postService	| PostService	| Private / Final	| 파일이 속한 게시글 검증 서비스 |
+| Attribute	| fileStorageService	| FileStorageService	| Private / Final	| 파일 저장 및 경로 관리 서비스 |
+| 구분	 | Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---    |
+| Method	| uploadAttachment(Long postId, MultipartFile file)	| ResponseEntity<AttachmentDto>	| 특정 게시글에 파일 업로드	|
+| Method	| downloadAttachment(Long attachmentId)	| ResponseEntity<Resource>	| 첨부 파일 다운로드	|
+| Method	| deleteAttachment(Long attachmentId)	| ResponseEntity<Void> 	| 첨부 파일 삭제 요청	|
+| Method	| getAttachmentsByPost(Long postId)	| ResponseEntity<List<AttachmentDto>>	| 게시글에 첨부된 파일 목록 조회	|
+
+| Class Name	| TagController |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	 | 게시판 또는 게시글에 태그(Tag)를 추가∙조회∙삭제하는 요청을 처리하는 컨트롤러. |	|	|	|
+| 구분	 | Name	| Type 	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| tagService	| TagService 	| Private / Final	| 태그 관리 비즈니스 로직 서비스 |
+| Attribute	| postService	| PostService	| Private / Final	| 게시글 태그 연동 관리 서비스 |
+| Attribute	| boardService	| BoardService	| Private / Final	| 게시판 태그 연동 검증 서비스 |
+| 구분	 | Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         | 
+| Method	| createTag(TagDto dto) 	| ResponseEntity<TagDto>	| 새로운 태그 생성	|
+| Method	| deleteTag(Long tagId) 		| ResponseEntity<Void>		| 특정 태그 삭제	|
+| Method	| getAllTags()	| ResponseEntity<List<TagDto>>	| 전체 태그 목록 조회	|
+| Method	| assignTagToPost(Long postId, Long tagId)	| ResponseEntity<Void> 	| 게시글에 태그 연결	|
+| Method	| removeTagFromPost(Long postId, Long tagId)	| ResponseEntity<Void>		| 게시글에서 태그 제거   |
 
 ## 4. Sequence diagram
 ## 유저
