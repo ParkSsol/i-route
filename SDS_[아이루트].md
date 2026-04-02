@@ -6496,6 +6496,342 @@ classDiagram
 | Method	| assignTagToPost(Long postId, Long tagId)	| ResponseEntity<Void> 	| 게시글에 태그 연결	|
 | Method	| removeTagFromPost(Long postId, Long tagId)	| ResponseEntity<Void>		| 게시글에서 태그 제거   |
 
+### 다이렉트 메시지 
+```mermaid
+classDiagram
+    direction TB
+
+    %%==============================
+    %% ENTITY
+    %%==============================
+    class User {
+        +Long userId
+        +String name
+        +String role
+    }
+
+    class ChatRoom {
+        +Long chatRoomId
+        +String name
+        +Boolean isGroup
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class Message {
+        +Long messageId
+        +String content
+        +Date sentAt
+        +Date readAt
+        +Boolean isRead
+    }
+
+    class Attachment {
+        +Long attachmentId
+        +String fileUrl
+        +String fileType
+        +Date uploadedAt
+    }
+
+    %% 관계
+    ChatRoom "1" --> "0..*" Message : contains
+    ChatRoom "0..*" --> "0..*" User : participants
+    Message "1" --> "1" User : sender
+    Message "1" --> "1" User : receiver
+    Message "0..*" --> "0..*" Attachment : includes
+
+    %%==============================
+    %% DTO
+    %%==============================
+    class ChatRoomDto {
+        +Long chatRoomId
+        +String name
+        +Boolean isGroup
+        +Date createdAt
+        +Date updatedAt
+        +List<UserDto> participants
+    }
+
+    class MessageDto {
+        +Long messageId
+        +Long chatRoomId
+        +Long senderId
+        +Long receiverId
+        +String content
+        +Boolean isRead
+        +Date sentAt
+        +List<AttachmentDto> attachments
+    }
+
+    class AttachmentDto {
+        +Long attachmentId
+        +Long messageId
+        +String fileUrl
+        +String fileType
+        +Date uploadedAt
+    }
+
+    class UserDto {
+        +Long userId
+        +String name
+        +String role
+    }
+
+    %%==============================
+    %% REPOSITORY
+    %%==============================
+    class ChatRoomRepository {
+        <<interface>>
+        +findByUsersContaining(User user)
+        +findByName(String name)
+    }
+
+    class MessageRepository {
+        <<interface>>
+        +findByChatRoom(ChatRoom room)
+        +findBySender(User sender)
+        +findByReceiver(User receiver)
+    }
+
+    %%==============================
+    %% SERVICE
+    %%==============================
+    class ChatRoomService {
+        +createChatRoom(List<Long> userIds, ChatRoomDto dto)
+        +getChatRoomsByUser(Long userId)
+        +getChatRoomDetail(Long roomId)
+        +deleteChatRoom(Long roomId)
+    }
+
+    class MessageService {
+        +sendMessage(Long roomId, Long senderId, MessageDto dto)
+        +getMessagesByRoom(Long roomId)
+        +markAsRead(Long messageId)
+        +deleteMessage(Long messageId)
+    }
+
+    %% 연결 (Service → Repository)
+    ChatRoomService --> ChatRoomRepository
+    MessageService --> MessageRepository
+    MessageService --> ChatRoomRepository
+
+    %%==============================
+    %% CONTROLLER
+    %%==============================
+    class ChatRoomController {
+        +createChatRoom(List<Long> userIds, ChatRoomDto dto)
+        +getChatRoomsByUser(Long userId)
+        +getChatRoomDetail(Long roomId)
+        +deleteChatRoom(Long roomId)
+    }
+
+    class MessageController {
+        +sendMessage(Long roomId, Long senderId, MessageDto dto)
+        +getChatMessages(Long roomId)
+        +markAsRead(Long messageId)
+        +deleteMessage(Long messageId)
+    }
+
+    %% 연결 (Controller → Service)
+    ChatRoomController --> ChatRoomService
+    MessageController --> MessageService
+
+    %%==============================
+    %% CROSS ENTITY-DATA RELATIONS
+    %%==============================
+    MessageDto --> ChatRoomDto : references
+    MessageDto --> AttachmentDto : includes
+    ChatRoomDto --> UserDto : participants
+
+```
+
+#### Entity Class
+
+| Class Name	| Message |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 사용자 간 송신 및 수신 메시지를 저장하는 엔티티. 읽음 여부 및 발송 시간을 관리한다. |	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---         | ---           | ---         | ---                 |
+| Attribute	| messageId	| Long	| Private	| 메시지 식별자 |
+| Attribute	| content	| String	| Private	| 메시지 본문 내용 |
+| Attribute	| sentAt	| Date	| Private	| 메시지 전송 시각 |
+| Attribute	| readAt	| Date	| Private	| 메시지 읽은 시각 |
+| Attribute	| isRead	| Boolean	| Private	| 메시지 읽음 여부 |
+| Attribute	| sender	| User 	| Private	| 메시지를 보낸 사용자 |
+| Attribute	| receiver	| User 	| Private	| 메시지를 받는 사용자 |
+| Attribute	| chatRoom	| ChatRoom	| Private	| 메시지가 속한 대화방 |
+| Attribute	| attachments	| List<Attachment>	| Private	| 첨부 파일 목록 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| markAsRead()	| void 	| 메시지를 읽음 처리하고 읽음 시각 갱신	|
+| Method	| attachFile(Attachment attachment) 	| void 	| 메시지에 첨부 파일 추가 |
+
+| Class Name	| ChatRoom |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 사용자 간 메시지를 주고받는 대화방을 정의한 엔티티. 그룹방 여부 및 참가자 목록을 포함한다.	|	|	|	|
+| 구분 	| Name	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| chatRoomId	| Long	| Private	| 대화방 식별자 |
+| Attribute	| name	| String	| Private	| 대화방 이름 |
+| Attribute	| isGroup	| Boolean	| Private	| 그룹방 여부(true면 단체방) |
+| Attribute	| createdAt	| Date	| Private	| 생성 일시 |
+| Attribute	| updatedAt	| Date	| Private	| 수정 일시 |
+| Attribute	| users	| List<User>	| Private	| 대화방 참여자 목록 |
+| Attribute	| messages	| List<Message>	| Private	| 해당 대화방 내 메시지 목록 |
+| 구분 	| Name	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| addUser(User user)	| void 	| 대화방에 사용자 추가	|
+| Method	| removeUser(User user)	| void 	| 대화방에서 사용자 제거 |
+
+| Class Name	| Attachment |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 메시지에 포함된 첨부 파일을 관리하는 엔티티. |	|	|	|
+| 구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| attachmentId	| Long	| Private	| 첨부 파일 식별자 |
+| Attribute	| fileUrl 	| String 	| Private	| 파일 경로(URL) |
+| Attribute	| fileType	| String 	| Private	| 파일 형식 (jpg, png, pdf 등) |
+| Attribute	| uploadedAt	| Date	| Private	| 업로드 시각 |
+| Attribute	| message	| Message	| Private	| 해당 첨부파일이 속한 메시지 |
+| 구분	| Name 	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| getFileExtension() 	| String 	| 파일 확장자 추출	|
+| Method	| hasValidType()	| Boolean	| 허용된 파일 형식 여부 확인	|
+
+#### DTO Class
+
+| Class Name	| MessageDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description 	| 메시지 송신, 조회, 삭제 요청 및 응답에 사용되는 데이터 전송 객체. |	|	|	|
+| 구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| messageId	| Long 	| Private	| 메시지 식별자 |
+| Attribute	| chatRoomId	| Long	| Private	| 소속 대화방 ID |
+| Attribute	| senderId	| Long	| Private	| 송신자 ID |
+| Attribute	| receiverId	| Long	| Private	| 수신자 ID |
+| Attribute	| content	| String	| Private	| 메시지 본문 내용 |
+| Attribute	| isRead	| Boolean	| Private	| 읽음 여부 |
+| Attribute	| sentAt 	| Date	| Private	| 메시지 발송 시각 |
+| Attribute	| attachments	| List<AttachmentDto> 	| Private	| 첨부 파일 DTO 목록 |
+
+| Class Name	| ChatRoomDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 대화방 생성, 조회 요청 및 응답에 사용하는 데이터 전송 객체.	|	|	|	|
+| 구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| chatRoomId	| Long	| Private	| 대화방 식별자 |
+| Attribute	| name	| String	| Private	| 대화방 이름 |
+| Attribute	| isGroup	| Boolean	| Private	| 그룹 여부 |
+| Attribute	| createdAt	| Date	| Private	| 생성 일시 |
+| Attribute	| updatedAt	| Date	| Private	| 수정 일시 |
+| Attribute	| participants	| List<UserDto>	| Private	| 참여자 정보 목록	|
+
+| Class Name	| AttachmentDto |	|	||
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 메시지에 첨부된 파일 정보를 주고받기 위한 데이터 객체. |	|	|	|
+| 구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| attachmentId	| Long	| Private	| 첨부 파일 식별자 |
+| Attribute	| messageId	| Long	| Private	| 메시지 ID |
+| Attribute	| fileUrl 	| String 	| Private	| 파일 경로(URI) |
+| Attribute	| fileType	| String 	| Private	| 파일 형식 |
+| Attribute	| uploadedAt	| Date	| Private	| 업로드 시각 |
+
+| Class Name	| UserDto |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 대화방 참여자 목록이나 송신자 정보에 표시되는 간략 사용자 DTO. |	|	|	|
+| 구분	| Name 	| Type	| Visibility 	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| userId	| Long	| Private	| 사용자 ID |
+| Attribute	| name	| String	| Private	| 이름 |
+| Attribute	| role	| String	| Private	| 사용자 역할 |
+
+#### Repository Class
+
+| Class Name	| ChatRoomRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 채팅방(ChatRoom) 정보를 관리하는 JPA Repository 인터페이스. |	|	|	|
+| 구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Interface	| ChatRoomRepository	| JpaRepository<ChatRoom, Long>	| Public 	| 대화방 엔티티 CRUD 제공 |
+| 구분	| Name 	| Return Type	| Description |
+| ---	              | ---                                | ---           | ---         |
+| Method	| findByUsersContaining(User user)	| List<ChatRoom> 	| 특정 사용자가 포함된 대화방 목록 조회	|
+| Method	| findByName(String name) 	| Optional<ChatRoom>	| 대화방 이름으로 검색	|
+
+| Class Name	| MessageRepository |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 메시지 데이터를 관리하는 JPA Repository 인터페이스. |	|	|	|
+| 구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Interface	| MessageRepository	| JpaRepository<Message, Long>	| Public 	| 메시지 CRUD 담당 |
+| 구분	| Name 	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| findByChatRoom(ChatRoom room)	| List<Message>	| 특정 대화방의 메시지 목록 조회	|
+| Method	| findBySender(User sender)	 | List<Message>	| 특정 사용자가 보낸 메시지 조회	|
+| Method	| findByReceiver(User receiver)	| List<Message>	| 특정 사용자가 받은 메시지 조회	|
+
+#### Service Class
+
+| Class Name	| ChatRoomService |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 대화방 생성, 삭제, 사용자 목록 조회 기능을 담당하는 비즈니스 로직 클래스. |	|	|	|
+| 구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| chatRoomRepository	| ChatRoomRepository	| Private / Final	| 대화방 데이터 접근 Repository |
+| Attribute	| userRepository	| UserRepository	| Private / Final	| 대화방 참여자 연동 Repository |
+| 구분	| Name	 | Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| createChatRoom(List<Long> userIds, ChatRoomDto dto)	| ChatRoom	| 사용자 목록 기반으로 새로운 대화방 생성	|
+| Method	| getChatRoomsByUser(Long userId)	| List<ChatRoom>	| 해당 사용자가 포함된 대화방 목록 조회	|
+| Method	| getChatRoomDetail(Long roomId)	| ChatRoom	| 대화방 상세 조회	|
+| Method	| deleteChatRoom(Long roomId)	| void	| 대화방 삭제	|
+
+| Class Name	| MessageService |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 메시지 송신, 조회, 읽음 처리 등의 비즈니스 로직을 담당하는 서비스 클래스. |	|	|	|
+| 구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| messageRepository	| MessageRepository	| Private / Final | 메시지 데이터 접근 객체 |
+| Attribute	| chatRoomRepository	| ChatRoomRepository	| Private / Final	| 대화방 검증 및 연동 Repository |
+| Attribute	| userRepository	| UserRepository	| Private / Final	| 메시지 송신자/수신자 검증용 Repository |
+| 구분	| Name 	| Return Type	| Description |
+| ---	              | ---                                | ---           | ---         |
+| Method	| sendMessage(Long roomId, Long senderId, MessageDto dto) 	| Message	| 메시지 전송 처리	|
+| Method	| getMessagesByRoom(Long roomId)	| List<Message>	| 채팅방별 메시지 목록 조회	|
+| Method	| markAsRead(Long messageId)	 | void	| 메시지 읽음 상태 변경 |
+| Method	| deleteMessage(Long messageId)	| void	| 메시지 삭제 처리	|
+
+#### Controller Class
+| Class Name	| ChatRoomController |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 채팅방 생성, 조회, 참여자 관리 요청을 처리하는 컨트롤러. |	|	|	|
+| 구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| chatRoomService	| ChatRoomService	| Private / Final	| 대화방 비즈니스 로직 처리 서비스 |
+| Attribute	| userService	| UserService	| Private / Final	| 사용자 검증 및 매핑 서비스 |
+| 구분	| Name 	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| createChatRoom(List<Long> userIds, ChatRoomDto dto)	| ResponseEntity<ChatRoomDto>	| 참여자 목록을 기반으로 채팅방 생성	|
+| Method	| getChatRoomsByUser(Long userId)	| ResponseEntity<List<ChatRoomDto>>	| 사용자가 참여 중인 대화방 목록 조회	|
+| Method	| getChatRoomDetail(Long roomId)	| ResponseEntity<ChatRoomDto>	| 특정 채팅방 상세 정보 조회	|
+| Method	| deleteChatRoom(Long roomId)	| ResponseEntity<Void>	| 채팅방 삭제 요청 처리	|
+
+| Class Name	| MessageController |	|	|	|
+| ----------------- | ---------------------------------------------------------- | ------ | ---------- | -------------------- |
+| Class Description	| 사용자 간 1:1 또는 그룹 메시지 송수신 요청을 처리하는 컨트롤러. |	|	|	|
+|구분	| Name 	| Type	| Visibility	| Description |
+| ---	              | ---                                | ---           | ---         | ---                               |
+| Attribute	| messageService	| MessageService	| Private / Final	| 메시지 전송 및 조회 비즈니스 로직 처리 서비스 |
+| Attribute	| userService	| UserService	| Private / Final	| 송신자 및 수신자 검증 서비스 |
+| Attribute	| chatRoomService	| ChatRoomService	| Private / Final	| 대화방 관리 서비스 |
+| 구분	| Name 	| Return Type	| Description	|
+| ---	              | ---                                | ---           | ---         |
+| Method	| sendMessage(Long roomId, Long senderId, MessageDto dto)	| ResponseEntity<MessageDto>	| 특정 대화방에 메시지 전송 처리	|
+| Method	| getChatMessages(Long roomId)	| ResponseEntity<List<MessageDto>>	| 대화방 내 메시지 목록 조회	 |
+| Method	| markAsRead(Long messageId) 	| ResponseEntity<Void>	| 메시지 읽음 상태 변경	|
+| Method	| deleteMessage(Long messageId)	| ResponseEntity<Void>	| 메시지 삭제 요청 처리	|
+
 ## 4. Sequence diagram
 ## 유저
 ### 1. GitHub OAuth 회원가입
