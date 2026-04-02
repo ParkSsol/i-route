@@ -81,7 +81,7 @@
 7. 로그아웃
 8. 토큰 재발급
 9. 비밀번호 변경
-10. 비밀번포 찾기
+10. 비밀번호 찾기
 11. 사용자 유형 선택(학부모, 학원, 관리자)
 
 ## AI
@@ -3085,6 +3085,7 @@ GENERAL CHARACTERISTICS
 ---
   ## 3. Class diagram
 
+<<<<<<< HEAD
 ### 회원관리 
 ```mermaid
 classDiagram
@@ -3157,6 +3158,517 @@ classDiagram
     AuthService <..> ProfileService : share user context
     System --> User : persists data
 ```
+
+
+### 회원관리
+```mermaid
+classDiagram
+    direction LR
+
+    %% =========================
+    %% Entity Layer
+    %% =========================
+    class UserEntity {
+        <<entity>>
+        - Long userId
+        - String loginId
+        - String password
+        - String name
+        - String email
+        - String phone
+        - UserStatus status
+        - DateTime createdAt
+        - DateTime deletedAt
+    }
+
+    class ProfileEntity {
+        <<entity>>
+        - Long profileId
+        - String nickname
+        - String address
+        - String profileImageUrl
+    }
+
+    class UserTypeEntity {
+        <<entity>>
+        - Long userTypeId
+        - String typeName
+    }
+
+    class TokenEntity {
+        <<entity>>
+        - Long tokenId
+        - String accessToken
+        - String refreshToken
+        - DateTime accessExpiredAt
+        - DateTime refreshExpiredAt
+    }
+
+    class SocialAccountEntity {
+        <<entity>>
+        - Long socialAccountId
+        - String provider
+        - String socialId
+        - String email
+    }
+
+    class PasswordResetEntity {
+        <<entity>>
+        - Long resetId
+        - String resetCode
+        - DateTime expiredAt
+        - Boolean verified
+    }
+
+    %% =========================
+    %% DTO Layer
+    %% =========================
+    class SignUpRequestDto {
+        <<dto>>
+        - String loginId
+        - String password
+        - String name
+        - String email
+        - String phone
+    }
+
+    class LoginRequestDto {
+        <<dto>>
+        - String loginId
+        - String password
+    }
+
+    class ProfileResponseDto {
+        <<dto>>
+        - String name
+        - String email
+        - String phone
+        - String nickname
+        - String address
+        - String userType
+    }
+
+    class UpdateProfileRequestDto {
+        <<dto>>
+        - String name
+        - String email
+        - String phone
+        - String nickname
+        - String address
+    }
+
+    class ChangePasswordRequestDto {
+        <<dto>>
+        - String currentPassword
+        - String newPassword
+        - String confirmPassword
+    }
+
+    class FindPasswordRequestDto {
+        <<dto>>
+        - String loginId
+        - String emailOrPhone
+    }
+
+    class SelectUserTypeRequestDto {
+        <<dto>>
+        - String userType
+    }
+
+    class TokenResponseDto {
+        <<dto>>
+        - String accessToken
+        - String refreshToken
+    }
+
+    %% =========================
+    %% Repository Layer
+    %% =========================
+    class UserRepository {
+        <<interface>>
+        + findByLoginId()
+        + save()
+        + existsByLoginId()
+        + findByEmail()
+    }
+
+    class ProfileRepository {
+        <<interface>>
+        + findByUserId()
+        + save()
+    }
+
+    class TokenRepository {
+        <<interface>>
+        + findByRefreshToken()
+        + save()
+        + delete()
+    }
+
+    class SocialAccountRepository {
+        <<interface>>
+        + findBySocialId()
+        + save()
+    }
+
+    class PasswordResetRepository {
+        <<interface>>
+        + save()
+        + findByResetCode()
+    }
+
+    class UserTypeRepository {
+        <<interface>>
+        + findByTypeName()
+    }
+
+    %% =========================
+    %% Service Layer
+    %% =========================
+    class AuthService {
+        - UserRepository userRepository
+        - TokenRepository tokenRepository
+        - SocialAccountRepository socialAccountRepository
+        - PasswordResetRepository passwordResetRepository
+        - UserTypeRepository userTypeRepository
+        + signUp()
+        + generalLogin()
+        + socialLogin()
+        + logout()
+        + reissueToken()
+        + changePassword()
+        + findPassword()
+        + selectUserType()
+    }
+
+    class ProfileService {
+        - UserRepository userRepository
+        - ProfileRepository profileRepository
+        + viewMyProfile()
+        + editMyProfile()
+        + softDeleteAccount()
+    }
+
+    %% =========================
+    %% Controller Layer
+    %% =========================
+    class AuthController {
+        - AuthService authService
+        + signUp()
+        + generalLogin()
+        + socialLogin()
+        + logout()
+        + reissueToken()
+        + changePassword()
+        + findPassword()
+        + selectUserType()
+    }
+
+    class ProfileController {
+        - ProfileService profileService
+        + viewMyProfile()
+        + editMyProfile()
+        + softDeleteAccount()
+    }
+
+    %% =========================
+    %% Relationships
+    %% =========================
+    UserEntity "1" --* "1" ProfileEntity : owns
+    UserEntity "1" --* "0..1" UserTypeEntity : has
+    UserEntity "1" --* "0..*" TokenEntity : issues
+    UserEntity "1" --* "0..1" SocialAccountEntity : links
+    UserEntity "1" --* "0..*" PasswordResetEntity : requests
+
+    UserRepository ..> UserEntity : manages
+    ProfileRepository ..> ProfileEntity : manages
+    TokenRepository ..> TokenEntity : manages
+    SocialAccountRepository ..> SocialAccountEntity : manages
+    PasswordResetRepository ..> PasswordResetEntity : manages
+    UserTypeRepository ..> UserTypeEntity : manages
+
+    AuthService --> UserRepository : uses
+    AuthService --> TokenRepository : uses
+    AuthService --> SocialAccountRepository : uses
+    AuthService --> PasswordResetRepository : uses
+    AuthService --> UserTypeRepository : uses
+
+    ProfileService --> UserRepository : uses
+    ProfileService --> ProfileRepository : uses
+
+    AuthController --> AuthService : calls
+    ProfileController --> ProfileService : calls
+```
+
+#### Entity Class
+
+  | Class Name        | UserEntity             |            |            |             |
+| ----------------- | ---------------------- | ---------- | ---------- | ----------- |
+| Class Description | 회원의 기본 계정 정보를 저장하는 엔티티 |            |            |             |
+| 구분                | Name                   | Type       | Visibility | Description |
+| ---               | ---                    | ---        | ---        | ---         |
+| Attribute         | userId                 | Long       | Private    | 회원 PK       |
+| Attribute         | loginId                | String     | Private    | 로그인 ID      |
+| Attribute         | password               | String     | Private    | 비밀번호        |
+| Attribute         | name                   | String     | Private    | 회원 이름       |
+| Attribute         | email                  | String     | Private    | 이메일         |
+| Attribute         | phone                  | String     | Private    | 전화번호        |
+| Attribute         | status                 | UserStatus | Private    | 계정 상태       |
+| Attribute         | createdAt              | DateTime   | Private    | 생성 일시       |
+| Attribute         | deletedAt              | DateTime   | Private    | 삭제 일시       |
+
+
+| Class Name        | ProfileEntity           |        |            |             |
+| ----------------- | ----------------------- | ------ | ---------- | ----------- |
+| Class Description | 회원의 프로필 상세 정보를 저장하는 엔티티 |        |            |             |
+| 구분                | Name                    | Type   | Visibility | Description |
+| ---               | ---                     | ---    | ---        | ---         |
+| Attribute         | profileId               | Long   | Private    | 프로필 PK      |
+| Attribute         | nickname                | String | Private    | 닉네임         |
+| Attribute         | address                 | String | Private    | 주소          |
+| Attribute         | profileImageUrl         | String | Private    | 프로필 이미지 URL |
+
+
+| Class Name        | UserTypeEntity                 |        |            |             |
+| ----------------- | ------------------------------ | ------ | ---------- | ----------- |
+| Class Description | 사용자 유형(학부모, 학원, 관리자)을 저장하는 엔티티 |        |            |             |
+| 구분                | Name                           | Type   | Visibility | Description |
+| ---               | ---                            | ---    | ---        | ---         |
+| Attribute         | userTypeId                     | Long   | Private    | 사용자 유형 PK   |
+| Attribute         | typeName                       | String | Private    | 사용자 유형명     |
+
+
+| Class Name        | TokenEntity                       |          |            |               |
+| ----------------- | --------------------------------- | -------- | ---------- | ------------- |
+| Class Description | JWT 액세스 토큰 및 리프레시 토큰 정보를 저장하는 엔티티 |          |            |               |
+| 구분                | Name                              | Type     | Visibility | Description   |
+| ---               | ---                               | ---      | ---        | ---           |
+| Attribute         | tokenId                           | Long     | Private    | 토큰 PK         |
+| Attribute         | accessToken                       | String   | Private    | 액세스 토큰        |
+| Attribute         | refreshToken                      | String   | Private    | 리프레시 토큰       |
+| Attribute         | accessExpiredAt                   | DateTime | Private    | 액세스 토큰 만료 시각  |
+| Attribute         | refreshExpiredAt                  | DateTime | Private    | 리프레시 토큰 만료 시각 |
+
+
+| Class Name        | SocialAccountEntity    |        |            |             |
+| ----------------- | ---------------------- | ------ | ---------- | ----------- |
+| Class Description | 소셜 로그인 연동 정보를 저장하는 엔티티 |        |            |             |
+| 구분                | Name                   | Type   | Visibility | Description |
+| ---               | ---                    | ---    | ---        | ---         |
+| Attribute         | socialAccountId        | Long   | Private    | 소셜 계정 PK    |
+| Attribute         | provider               | String | Private    | 소셜 로그인 제공자  |
+| Attribute         | socialId               | String | Private    | 소셜 계정 식별자   |
+| Attribute         | email                  | String | Private    | 소셜 계정 이메일   |
+
+
+#### DTO Class
+| Class Name        | SignUpRequestDto      |        |            |             |
+| ----------------- | --------------------- | ------ | ---------- | ----------- |
+| Class Description | 회원가입 요청 데이터를 전달하는 DTO |        |            |             |
+| 구분                | Name                  | Type   | Visibility | Description |
+| ---               | ---                   | ---    | ---        | ---         |
+| Attribute         | loginId               | String | Private    | 로그인 ID      |
+| Attribute         | password              | String | Private    | 비밀번호        |
+| Attribute         | name                  | String | Private    | 회원 이름       |
+| Attribute         | email                 | String | Private    | 이메일         |
+| Attribute         | phone                 | String | Private    | 전화번호        |
+
+
+| Class Name        | LoginRequestDto         |        |            |             |
+| ----------------- | ----------------------- | ------ | ---------- | ----------- |
+| Class Description | 일반 로그인 요청 데이터를 전달하는 DTO |        |            |             |
+| 구분                | Name                    | Type   | Visibility | Description |
+| ---               | ---                     | ---    | ---        | ---         |
+| Attribute         | loginId                 | String | Private    | 로그인 ID      |
+| Attribute         | password                | String | Private    | 비밀번호        |
+
+
+| Class Name        | ProfileResponseDto      |        |            |             |
+| ----------------- | ----------------------- | ------ | ---------- | ----------- |
+| Class Description | 프로필 조회 응답 데이터를 전달하는 DTO |        |            |             |
+| 구분                | Name                    | Type   | Visibility | Description |
+| ---               | ---                     | ---    | ---        | ---         |
+| Attribute         | name                    | String | Private    | 회원 이름       |
+| Attribute         | email                   | String | Private    | 이메일         |
+| Attribute         | phone                   | String | Private    | 전화번호        |
+| Attribute         | nickname                | String | Private    | 닉네임         |
+| Attribute         | address                 | String | Private    | 주소          |
+| Attribute         | userType                | String | Private    | 사용자 유형      |
+
+
+| Class Name        | UpdateProfileRequestDto |        |            |             |
+| ----------------- | ----------------------- | ------ | ---------- | ----------- |
+| Class Description | 프로필 수정 요청 데이터를 전달하는 DTO |        |            |             |
+| 구분                | Name                    | Type   | Visibility | Description |
+| ---               | ---                     | ---    | ---        | ---         |
+| Attribute         | name                    | String | Private    | 회원 이름       |
+| Attribute         | email                   | String | Private    | 이메일         |
+| Attribute         | phone                   | String | Private    | 전화번호        |
+| Attribute         | nickname                | String | Private    | 닉네임         |
+| Attribute         | address                 | String | Private    | 주소          |
+
+
+| Class Name        | ChangePasswordRequestDto |        |            |             |
+| ----------------- | ------------------------ | ------ | ---------- | ----------- |
+| Class Description | 비밀번호 변경 요청 데이터를 전달하는 DTO |        |            |             |
+| 구분                | Name                     | Type   | Visibility | Description |
+| ---               | ---                      | ---    | ---        | ---         |
+| Attribute         | currentPassword          | String | Private    | 현재 비밀번호     |
+| Attribute         | newPassword              | String | Private    | 새 비밀번호      |
+| Attribute         | confirmPassword          | String | Private    | 새 비밀번호 확인   |
+
+
+| Class Name        | FindPasswordRequestDto   |        |            |             |
+| ----------------- | ------------------------ | ------ | ---------- | ----------- |
+| Class Description | 비밀번호 찾기 요청 데이터를 전달하는 DTO |        |            |             |
+| 구분                | Name                     | Type   | Visibility | Description |
+| ---               | ---                      | ---    | ---        | ---         |
+| Attribute         | loginId                  | String | Private    | 로그인 ID      |
+| Attribute         | emailOrPhone             | String | Private    | 이메일 또는 전화번호 |
+
+
+| Class Name        | SelectUserTypeRequestDto   |        |            |             |
+| ----------------- | -------------------------- | ------ | ---------- | ----------- |
+| Class Description | 사용자 유형 선택 요청 데이터를 전달하는 DTO |        |            |             |
+| 구분                | Name                       | Type   | Visibility | Description |
+| ---               | ---                        | ---    | ---        | ---         |
+| Attribute         | userType                   | String | Private    | 사용자 유형      |
+
+
+| Class Name        | TokenResponseDto                 |        |            |             |
+| ----------------- | -------------------------------- | ------ | ---------- | ----------- |
+| Class Description | 로그인 또는 재발급 후 토큰 응답 데이터를 전달하는 DTO |        |            |             |
+| 구분                | Name                             | Type   | Visibility | Description |
+| ---               | ---                              | ---    | ---        | ---         |
+| Attribute         | accessToken                      | String | Private    | 액세스 토큰      |
+| Attribute         | refreshToken                     | String | Private    | 리프레시 토큰     |
+
+
+#### Repository Class
+| Class Name        | UserRepository                      |            |            |                 |
+| ----------------- | ----------------------------------- | ---------- | ---------- | --------------- |
+| Class Description | UserEntity 저장 및 조회를 담당하는 Repository |            |            |                 |
+| 구분                | Name                                | Type       | Visibility | Description     |
+| ---               | ---                                 | ---        | ---        | ---             |
+| Method            | findByLoginId()                     | UserEntity | Public     | 로그인 ID로 회원 조회   |
+| Method            | save()                              | UserEntity | Public     | 회원 정보 저장        |
+| Method            | existsByLoginId()                   | Boolean    | Public     | 로그인 ID 중복 여부 확인 |
+| Method            | findByEmail()                       | UserEntity | Public     | 이메일로 회원 조회      |
+
+
+| Class Name        | ProfileRepository                      |               |            |               |
+| ----------------- | -------------------------------------- | ------------- | ---------- | ------------- |
+| Class Description | ProfileEntity 저장 및 조회를 담당하는 Repository |               |            |               |
+| 구분                | Name                                   | Type          | Visibility | Description   |
+| ---               | ---                                    | ---           | ---        | ---           |
+| Method            | findByUserId()                         | ProfileEntity | Public     | 회원 ID로 프로필 조회 |
+| Method            | save()                                 | ProfileEntity | Public     | 프로필 정보 저장     |
+
+
+| Class Name        | TokenRepository                         |             |            |                 |
+| ----------------- | --------------------------------------- | ----------- | ---------- | --------------- |
+| Class Description | TokenEntity 저장, 조회, 삭제를 담당하는 Repository |             |            |                 |
+| 구분                | Name                                    | Type        | Visibility | Description     |
+| ---               | ---                                     | ---         | ---        | ---             |
+| Method            | findByRefreshToken()                    | TokenEntity | Public     | 리프레시 토큰으로 토큰 조회 |
+| Method            | save()                                  | TokenEntity | Public     | 토큰 저장           |
+| Method            | delete()                                | void        | Public     | 토큰 삭제           |
+
+
+| Class Name        | SocialAccountRepository                      |                     |            |              |
+| ----------------- | -------------------------------------------- | ------------------- | ---------- | ------------ |
+| Class Description | SocialAccountEntity 저장 및 조회를 담당하는 Repository |                     |            |              |
+| 구분                | Name                                         | Type                | Visibility | Description  |
+| ---               | ---                                          | ---                 | ---        | ---          |
+| Method            | findBySocialId()                             | SocialAccountEntity | Public     | 소셜 ID로 계정 조회 |
+| Method            | save()                                       | SocialAccountEntity | Public     | 소셜 계정 정보 저장  |
+
+
+| Class Name        | PasswordResetRepository                      |                     |            |                  |
+| ----------------- | -------------------------------------------- | ------------------- | ---------- | ---------------- |
+| Class Description | PasswordResetEntity 저장 및 조회를 담당하는 Repository |                     |            |                  |
+| 구분                | Name                                         | Type                | Visibility | Description      |
+| ---               | ---                                          | ---                 | ---        | ---              |
+| Method            | save()                                       | PasswordResetEntity | Public     | 재설정 요청 저장        |
+| Method            | findByResetCode()                            | PasswordResetEntity | Public     | 인증 코드로 재설정 정보 조회 |
+
+
+| Class Name        | UserTypeRepository                 |                |            |                 |
+| ----------------- | ---------------------------------- | -------------- | ---------- | --------------- |
+| Class Description | UserTypeEntity 조회를 담당하는 Repository |                |            |                 |
+| 구분                | Name                               | Type           | Visibility | Description     |
+| ---               | ---                                | ---            | ---        | ---             |
+| Method            | findByTypeName()                   | UserTypeEntity | Public     | 유형명으로 사용자 유형 조회 |
+
+
+#### Service Class
+| Class Name        | AuthService                                                    |                         |                 |                     |
+| ----------------- | -------------------------------------------------------------- | ----------------------- | --------------- | ------------------- |
+| Class Description | 회원가입, 로그인, 로그아웃, 토큰 재발급, 비밀번호 변경, 비밀번호 찾기, 사용자 유형 선택을 처리하는 서비스 |                         |                 |                     |
+| 구분                | Name                                                           | Type                    | Visibility      | Description         |
+| ---               | ---                                                            | ---                     | ---             | ---                 |
+| Attribute         | userRepository                                                 | UserRepository          | Private / Final | 회원 정보 조회 및 저장       |
+| Attribute         | tokenRepository                                                | TokenRepository         | Private / Final | 토큰 저장 및 조회          |
+| Attribute         | socialAccountRepository                                        | SocialAccountRepository | Private / Final | 소셜 계정 조회 및 저장       |
+| Attribute         | passwordResetRepository                                        | PasswordResetRepository | Private / Final | 비밀번호 재설정 정보 조회 및 저장 |
+| Attribute         | userTypeRepository                                             | UserTypeRepository      | Private / Final | 사용자 유형 조회           |
+| 구분                | Name                                                           | Type                    | Visibility      | Description         |
+| ---               | ---                                                            | ---                     | ---             | ---                 |
+| Method            | signUp()                                                       | UserEntity              | Public          | 회원가입 처리             |
+| Method            | generalLogin()                                                 | TokenResponseDto        | Public          | 일반 로그인 처리           |
+| Method            | socialLogin()                                                  | TokenResponseDto        | Public          | 소셜 로그인 처리           |
+| Method            | logout()                                                       | void                    | Public          | 로그아웃 처리             |
+| Method            | reissueToken()                                                 | TokenResponseDto        | Public          | 토큰 재발급 처리           |
+| Method            | changePassword()                                               | void                    | Public          | 비밀번호 변경 처리          |
+| Method            | findPassword()                                                 | void                    | Public          | 비밀번호 찾기 및 재설정 처리    |
+| Method            | selectUserType()                                               | UserTypeEntity          | Public          | 사용자 유형 선택 처리        |
+
+
+| Class Name        | ProfileService                       |                    |                 |             |
+| ----------------- | ------------------------------------ | ------------------ | --------------- | ----------- |
+| Class Description | 내 프로필 조회, 내 프로필 수정, 소프트 삭제를 처리하는 서비스 |                    |                 |             |
+| 구분                | Name                                 | Type               | Visibility      | Description |
+| ---               | ---                                  | ---                | ---             | ---         |
+| Attribute         | userRepository                       | UserRepository     | Private / Final | 회원 조회       |
+| Attribute         | profileRepository                    | ProfileRepository  | Private / Final | 프로필 조회 및 저장 |
+| 구분                | Name                                 | Type               | Visibility      | Description |
+| ---               | ---                                  | ---                | ---             | ---         |
+| Method            | viewMyProfile()                      | ProfileResponseDto | Public          | 내 프로필 조회    |
+| Method            | editMyProfile()                      | ProfileEntity      | Public          | 내 프로필 수정    |
+| Method            | softDeleteAccount()                  | void               | Public          | 계정 소프트 삭제   |
+
+
+#### Controller Class
+| Class Name        | AuthController                                                           |                |                 |               |
+| ----------------- | ------------------------------------------------------------------------ | -------------- | --------------- | ------------- |
+| Class Description | 회원가입, 로그인, 로그아웃, 토큰 재발급, 비밀번호 변경, 비밀번호 찾기, 사용자 유형 선택 요청을 처리하는 Controller |                |                 |               |
+| 구분                | Name                                                                     | Type           | Visibility      | Description   |
+| ---               | ---                                                                      | ---            | ---             | ---           |
+| Attribute         | authService                                                              | AuthService    | Private / Final | 인증/회원관리 서비스   |
+| 구분                | Name                                                                     | Type           | Visibility      | Description   |
+| ---               | ---                                                                      | ---            | ---             | ---           |
+| Method            | signUp()                                                                 | ResponseEntity | Public          | 회원가입 API      |
+| Method            | generalLogin()                                                           | ResponseEntity | Public          | 일반 로그인 API    |
+| Method            | socialLogin()                                                            | ResponseEntity | Public          | 소셜 로그인 API    |
+| Method            | logout()                                                                 | ResponseEntity | Public          | 로그아웃 API      |
+| Method            | reissueToken()                                                           | ResponseEntity | Public          | 토큰 재발급 API    |
+| Method            | changePassword()                                                         | ResponseEntity | Public          | 비밀번호 변경 API   |
+| Method            | findPassword()                                                           | ResponseEntity | Public          | 비밀번호 찾기 API   |
+| Method            | selectUserType()                                                         | ResponseEntity | Public          | 사용자 유형 선택 API |
+
+
+| Class Name        | ProfileController                              |                |                 |               |
+| ----------------- | ---------------------------------------------- | -------------- | --------------- | ------------- |
+| Class Description | 내 프로필 조회, 내 프로필 수정, 소프트 삭제 요청을 처리하는 Controller |                |                 |               |
+| 구분                | Name                                           | Type           | Visibility      | Description   |
+| ---               | ---                                            | ---            | ---             | ---           |
+| Attribute         | profileService                                 | ProfileService | Private / Final | 프로필 서비스       |
+| 구분                | Name                                           | Type           | Visibility      | Description   |
+| ---               | ---                                            | ---            | ---             | ---           |
+| Method            | viewMyProfile()                                | ResponseEntity | Public          | 내 프로필 조회 API  |
+| Method            | editMyProfile()                                | ResponseEntity | Public          | 내 프로필 수정 API  |
+| Method            | softDeleteAccount()                            | ResponseEntity | Public          | 계정 소프트 삭제 API |
+
 
 ### AI
 ```mermaid
@@ -5118,6 +5630,7 @@ classDiagram
 | Method	| getAllTags()	| ResponseEntity<List<TagDto>>	| 전체 태그 목록 조회	|
 | Method	| assignTagToPost(Long postId, Long tagId)	| ResponseEntity<Void> 	| 게시글에 태그 연결	|
 | Method	| removeTagFromPost(Long postId, Long tagId)	| ResponseEntity<Void>		| 게시글에서 태그 제거   |
+
 
 ## 4. Sequence diagram
 ## 유저
