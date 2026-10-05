@@ -23,7 +23,7 @@
 | Revision date | Version # | Description | Author |
 |---------------|-----------|-------------|--------|
 | 1/04/2026    | 1.00      | 1차완성 | Author name |
-| | | | |
+| 6/10/2026    | 2.00      | AI 기능 추가 구현·변경 반영 (#59~#63: AI 질문, 영어·과학·사회 리포트, 개념 추천 AI 위임, OCR 채점, 집중도 기록 / AI 클래스·시퀀스 다이어그램, 배포 구성) | 김우주 |
 | | | | |
 | | | | |
 | | | | |
@@ -147,6 +147,27 @@ AI 분석 결과를 바탕으로 학생의 약점을 보완하고 개인화된 �
 26. 목표 기반 학습 추천
   - 희망 대학/학과 또는 목표 점수 도달을 위한 단계별 로드맵 제시
   - 동일 목표를 달성한 선배 사용자들의 학습 데이터를 기반으로 한 성공 경로 추천
+
+### AI 질문 및 과목 확장 (2026.10 추가)
+학생이 직접 묻는 질문에 교과 자료를 근거로 답하고, AI 리포트 지원 과목을 넓힌 기능이다.
+
+59. AI에게 질문하기
+  - 과목(자동/수학/영어/국어/사회/과학)을 고르고 300자 이내로 질문
+  - 교과 개념 노트(ConceptMap)와 교과 자료(FAISS)를 근거로 AI가 답변, 수식은 KaTeX로 표시
+60. 과목별 메타인지 리포트 (영어·과학·사회)
+  - 수학·국어·프리미엄 3종에 영어·과학·사회를 더해 6종
+  - 과목 백분위, 최다 오답 개념, 강사 피드백을 반영한 분석과 학습 전략
+61. AI 맞춤 개념 추천 (변경)
+  - 취약 개념 설명을 AI 서버가 생성하고, AI 서버가 실패하면 규칙 기반 리포트로 대체
+
+### 학습 기기(라즈베리파이) 연동 (2026.09 추가)
+교실의 라즈베리파이로 채점·집중도 데이터를 모아 AI 분석에 반영하는 기능이다.
+
+62. 손글씨 답안 OCR 채점 및 오답 기록
+  - 워크시트의 손글씨 답을 인식·채점하고 오답을 자동 기록(이후 리포트의 취약 개념에 반영)
+63. 학습 집중도 측정 및 기록
+  - 카메라로 집중 상태를 판정해 학습 활동의 집중도 별점으로 기록
+
 
 ## GPS
 
@@ -1568,6 +1589,265 @@ GENERAL CHARACTERISTICS
 - **Due Date**:
   2026.03.30
 
+
+
+### **Use case #59 : AI에게 질문하기
+#### GENERAL CHARACTERISTICS
+- **Summary**
+  학생이 모르는 개념을 문장으로 물으면, AI 서버가 질문의 과목을 판단하고 교과 개념 노트(ConceptMap)와 교과 자료(FAISS)에서 근거를 찾아 답을 만들어 보여 준다.
+- **Scope**
+  아이루트
+- **Level**
+  User level
+- **Author**
+  김우주
+- **Last Update**
+  2026.10.05
+- **Status**
+  Implemented
+- **Primary Actor**
+  학생, 학부모
+- **Preconditions**
+  1. 사용자는 로그인된 상태여야 한다(JWT).
+  2. 사용자는 학습 화면의 "💬 AI 질문" 탭에 있어야 한다.
+- **Trigger**
+  사용자가 질문을 입력하고 "질문하기" 버튼을 누른다.
+- **Success Post Condition**
+  1. 질문 아래에 과목, 근거 여부("📚 교과 자료 기반" 또는 "⚠️ 맞는 교과 자료 없이 생성됨"), 답변이 카드로 표시된다.
+  2. 답변 속 수식은 KaTeX로 렌더링된다.
+- **Failed Post Condition**
+  1. 질문이 2자 미만이거나 300자를 넘음, 지원하지 않는 과목 → 400, 안내 문구 표시
+  2. AI 서버가 꺼져 있거나 50초 안에 답하지 못함 → 503, "AI 서버가 지금 답변할 수 없습니다" 표시
+  3. 질문의 과목을 알 수 없음 → 답하지 않고 과목을 고르라고 안내(입력한 질문은 유지)
+#### MAIN SUCCESS SCENARIO
+| Step | Action |
+| ---- | ------ |
+| S    | 사용자가 학습 화면의 "💬 AI 질문" 탭에 진입한다. |
+| 1    | 사용자가 과목(자동·수학·영어·국어·사회·과학)을 고르고 질문을 입력한 뒤 "질문하기"를 누른다. |
+| 2    | 클라이언트는 `POST /api/ai/ask { question, subject? }`를 Backend에 보낸다. |
+| 3    | Backend는 입력을 검증하고 AI 서버 `POST /api/ai/ask`를 호출한다(공유 키 헤더 포함, 최대 50초). |
+| 4    | AI 서버는 과목이 없으면 질문에서 과목을 감지하고(ConceptMap 키워드 → 과목 키워드), 그 과목의 ConceptMap → FAISS 순으로 자료를 찾는다. |
+| 5    | AI 서버는 ConceptMap 자료만 근거로 붙여 Qwen으로 답을 생성하고, 다른 문자 차단·마크다운/챗봇 말투 제거를 거쳐 돌려준다. |
+| 6    | 클라이언트는 답변 카드를 질문 목록 맨 위에 추가하고 입력창을 비운다. |
+#### EXTENSION SCENARIOS
+| Step | Branching Action |
+| ---- | ---------------- |
+| 1a   | 질문이 2자 미만이면 버튼이 비활성화되고, 300자를 넘게 입력할 수 없다. |
+| 3a   | Backend 검증에서 빈 질문·300자 초과·미지원 과목(예: 한국사)이면 AI 서버를 부르지 않고 400과 안내 문구를 돌려준다. |
+| 3b   | AI 서버 연결 실패·5xx·50초 초과·빈 답변이면 503 "AI 서버가 지금 답변할 수 없습니다. 잠시 후 다시 시도해 주세요."를 돌려준다. |
+| 4a   | 과목을 감지하지 못하면(예: "오늘 점심 뭐 먹지") 생성하지 않고 `needSubject=true`를 돌려준다. 클라이언트는 "어떤 과목 질문인지 알 수 없어요. 위에서 과목을 고른 뒤 다시 질문해 주세요."를 표시하고 질문을 남겨 둔다. |
+| 5a   | Qwen 생성이 실패하면 Ollama(llama3.1)로 한 번 더 시도한다. 둘 다 실패하면 3b와 같다. |
+| 5b   | 맞는 ConceptMap 자료가 없으면 근거 없이 생성하고 `grounded=false`로 표시해 교과서 확인을 권한다. |
+#### RELATED INFORMATION
+- **Performance**:
+  실측 1~12초(근거가 짧은 사실 질문은 1~3초). 생성은 GPU 한 대에서 한 번에 하나씩이라 다른 생성이 앞에 있으면 기다린다. Backend 대기 한도는 50초(CloudFront 원본 응답 한도 60초보다 짧게).
+- **Frequency**:
+  학습 중 수시로 사용. 사용자당 하루 수 회를 예상한다.
+- **Concurrency**:
+  동시에 여러 명이 물으면 순서대로 생성되므로 뒤 요청이 늦어진다(개념 추천 3건 동시 측정 시 마지막 76초 → 50초 한도 초과 시 503).
+- **Due Date**:
+  2026.10.05
+
+### **Use case #60 : 과목별 메타인지 리포트(영어·과학·사회)
+#### GENERAL CHARACTERISTICS
+- **Summary**
+  학생의 과목별 학업 수준(백분위), 학습 시간, 자기 평가, 강사 피드백, 최다 오답 개념을 바탕으로 영어·과학·사회 과목의 분석 결과와 학습 전략을 만든다. 기존 수학·국어(진로)·프리미엄 리포트와 같은 형식이며, 취약 개념이 있으면 AI가 쓴 개념 설명 문단(`[AI 개념 심층 분석]`)을 붙인다.
+- **Scope**
+  아이루트
+- **Level**
+  User level
+- **Author**
+  김우주
+- **Last Update**
+  2026.10.02
+- **Status**
+  Implemented
+- **Primary Actor**
+  학생, 학부모, 학원 관리자
+- **Preconditions**
+  1. 사용자는 로그인된 상태여야 한다.
+  2. 대상 학생이 DB에 존재해야 한다.
+- **Trigger**
+  사용자가 "AI 리포트" 화면에서 "영어/과학/사회 메타인지 리포트"의 "리포트 생성"을 누른다.
+- **Success Post Condition**
+  1. 분석 결과와 학습 가이드가 화면에 표시되고 PDF로 인쇄할 수 있다.
+  2. 리포트가 `AiRecommendation`으로 DB에 저장된다.
+- **Failed Post Condition**
+  1. 지원하지 않는 과목 → Backend 400(AI 서버 404)
+  2. AI 서버 연결 실패 → 503 "Python AI 서버가 실행 중이지 않습니다"
+#### MAIN SUCCESS SCENARIO
+| Step | Action |
+| ---- | ------ |
+| S    | 사용자가 리포트 생성 버튼을 누른다. |
+| 1    | 클라이언트는 `POST /api/counseling/{영어\|과학\|사회}?studentId=`를 보낸다. |
+| 2    | Backend(`AiCounselingService`)는 DB에서 학생 정보, 최근 강사 피드백, 그 과목 최다 오답 개념(`weakConcept`), 최근 시험 백분위(`subjectPercentile`, 없으면 "과학탐구"처럼 저장된 성적도 찾음)를 모은다. |
+| 3    | Backend는 AI 서버 `POST /api/ai/report/{과목}`에 보낸다. |
+| 4    | AI 서버는 규칙 기반으로 학업 수준·학습 가이드를 만들고, 취약 개념이 있으면 ConceptMap 근거로 Qwen 개념 설명을 붙인다. |
+| 5    | Backend는 응답을 그대로 돌려주고 비동기로 `AiRecommendation`에 저장한다. |
+| 6    | 클라이언트는 분석 결과·학습 가이드를 줄바꿈과 수식(KaTeX)을 살려 표시한다. |
+#### EXTENSION SCENARIOS
+| Step | Branching Action |
+| ---- | ---------------- |
+| 2a   | 그 과목 성적이 없으면 국어 백분위로 대신하고 "국어 백분위"로, 둘 다 없으면 "성적 정보 없음"으로 표시한다. |
+| 2b   | 그 과목 오답이 없으면 취약 개념 없이 생성하고 AI 개념 설명 문단은 붙지 않는다. |
+| 4a   | Qwen 생성이 실패하면 Ollama로 대신하고, 그것도 실패하면 AI 문단만 빼고 나머지 리포트를 돌려준다. |
+| 3a   | AI 서버가 응답하지 않으면 503을 돌려준다. |
+#### RELATED INFORMATION
+- **Performance**:
+  실측(학생 프로필 3개) 영어 14~18초, 과학 21~40초, 사회 19~30초. 과학이 50초 한도에 가장 가깝다.
+- **Frequency**:
+  시험 전후, 상담 시 사용. 학생당 월 수 회.
+- **Concurrency**:
+  #59와 같이 생성이 순차라 동시 요청 시 늦어진다.
+- **Due Date**:
+  2026.10.02
+
+### **Use case #61 : AI 맞춤 개념 추천 (변경)
+#### GENERAL CHARACTERISTICS
+- **Summary**
+  학생의 최근 성적에서 취약 개념을 골라 학습 가이드와 AI 개념 설명을 만든다. SDS v1.00에서는 Backend가 평균·추세로 규칙 기반 문구만 만들었으나, 지금은 **AI 서버에 위임하고 실패할 때만 규칙 기반 문구로 대신한다**. 응답 형식은 같다.
+- **Scope**
+  아이루트
+- **Level**
+  User level
+- **Author**
+  김우주
+- **Last Update**
+  2026.10.03
+- **Status**
+  Implemented
+- **Primary Actor**
+  학생, 학부모, 학원 관리자
+- **Preconditions**
+  1. 사용자는 로그인된 상태여야 한다.
+  2. 과목은 수학·영어·국어·사회·과학 중 하나이고, 그 과목 성적이 있어야 버튼이 활성화된다.
+- **Trigger**
+  사용자가 "AI 맞춤 문제 추천"에서 과목을 고르고 "리포트 생성"을 누른다.
+- **Success Post Condition**
+  1. 취약 개념, `[관련 학습 자료]`, `[학습 전략]`, `[AI 개념 분석]`이 표시된다.
+- **Failed Post Condition**
+  1. AI 서버 실패·50초 초과 → 규칙 기반 리포트(평균 점수·추세 기반)로 대신 표시(사용자에게는 오류가 보이지 않음)
+#### MAIN SUCCESS SCENARIO
+| Step | Action |
+| ---- | ------ |
+| S    | 사용자가 과목을 고르고 리포트 생성을 누른다. |
+| 1    | 클라이언트는 `POST /api/ai/report/subject-recommend?studentId=&subject=`를 보낸다. 예전 성적의 "사회탐구/과학탐구"는 "사회/과학"으로 맞춘다. |
+| 2    | Backend(`AiReportController`)는 가장 최근 성적의 `weakConceptTag`를 취약 개념으로 고른다. |
+| 3    | Backend는 AI 서버 `POST /api/ai/report/subject-recommend?student_id=&subject=&concept_tag=`를 최대 50초 기다린다. |
+| 4    | AI 서버는 ConceptMap(운영 DB 개념 태그 33개 모두 대응) → FAISS 순으로 자료를 찾고, ConceptMap 자료를 근거로 Qwen 개념 설명을 만든다. |
+| 5    | 클라이언트는 리포트를 표시하고 수식은 KaTeX로 렌더링한다. |
+#### EXTENSION SCENARIOS
+| Step | Branching Action |
+| ---- | ---------------- |
+| 3a   | AI 서버가 꺼졌거나 50초를 넘기면 Backend가 평균 점수·추세로 규칙 기반 리포트를 만들어 같은 형식으로 돌려준다. |
+| 4a   | `concept_tag`가 없으면 AI 서버가 오답 API의 첫 개념 태그를, 그것도 없으면 과목 기본 개념을 쓴다. |
+| 4b   | Qwen 실패 시 Ollama로 대신한다. |
+#### RELATED INFORMATION
+- **Performance**:
+  운영 태그 33개 실측 중앙값 25.6초, 최대 41.3초.
+- **Frequency**:
+  오답 누적 후 수시.
+- **Concurrency**:
+  3명이 동시에 누르면 마지막 요청이 50초를 넘어 규칙 기반으로 바뀔 수 있다.
+- **Due Date**:
+  2026.10.03
+
+### **Use case #62 : 손글씨 답안 OCR 채점 및 오답 기록
+#### GENERAL CHARACTERISTICS
+- **Summary**
+  라즈베리파이 5로 촬영한 워크시트에서 문항별 손글씨 답을 읽어 정답과 비교하고, 틀린 문항을 Backend에 오답으로 기록한다. 기록된 오답은 #60·#61의 취약 개념이 된다.
+- **Scope**
+  아이루트
+- **Level**
+  User level
+- **Author**
+  김우주
+- **Last Update**
+  2026.09.15
+- **Status**
+  Implemented (실제 Pi 촬영 이미지로는 정확도 미측정)
+- **Primary Actor**
+  학원 관리자(라즈베리파이 운용)
+- **Preconditions**
+  1. 워크시트별 문항 정의 JSON(문항 ID, 답 위치 `bbox`, 정답, 선택: 개념 태그·오류 유형)이 준비되어 있어야 한다.
+  2. 업로드 시 Backend 주소와 학생 ID가 설정되어 있어야 한다.
+- **Trigger**
+  관리자가 Pi에서 채점 명령(`--image`, `--questions`, `--upload`)을 실행한다.
+- **Success Post Condition**
+  1. 문항별 채점 결과가 출력된다.
+  2. 오답만 `POST /api/wrong-answer/record`로 기록되고, 같은 문항을 다시 틀리면 `failCount`가 올라간다.
+- **Failed Post Condition**
+  1. 이미지·문항 정의 오류 → 채점 중단, 오류 출력
+  2. Backend 연결 실패 → 채점 결과만 출력, 기록 안 됨
+#### MAIN SUCCESS SCENARIO
+| Step | Action |
+| ---- | ------ |
+| S    | 관리자가 워크시트를 촬영하고 채점 명령을 실행한다. |
+| 1    | Pi는 `bbox`로 답 영역을 잘라 여백을 지우고 높이 32px로 맞춘다. |
+| 2    | CRNN+CTC 모델(`ocr_model_aug.pt`)로 글자를 인식한다. |
+| 3    | 공백을 뺀 정답과의 유사도(1 − 정규화 편집거리)가 0.8 이상이면 정답으로 본다. |
+| 4    | 오답 문항을 `POST /api/wrong-answer/record?studentId=&subject=&questionId=&conceptTag=&errorType=`로 기록한다(개념 태그가 없으면 과목명). |
+#### EXTENSION SCENARIOS
+| Step | Branching Action |
+| ---- | ---------------- |
+| 1a   | 답 영역 글자 높이가 16px 미만이면 인식률이 크게 떨어진다(촬영 거리 조정 필요). |
+| 4a   | `--upload`가 없으면 기록하지 않고 결과만 출력한다. |
+#### RELATED INFORMATION
+- **Performance**:
+  검증 36.5만 개 기준 문자 오류율 12.7%, 채점 정답 인정 87.1%. 단어·숫자 답 85~92%, 손글씨 수식 기호 17%.
+- **Frequency**:
+  워크시트 채점 시.
+- **Concurrency**:
+  Pi 한 대에서 순차 실행.
+- **Due Date**:
+  2026.09.15
+
+### **Use case #63 : 학습 집중도 측정 및 기록
+#### GENERAL CHARACTERISTICS
+- **Summary**
+  라즈베리파이 카메라로 1초마다 학생 얼굴을 보고 집중 / 집중하지 않음 / 졸음을 판정하고, 세션이 끝나면 집중 비율을 별점(1~5)으로 바꿔 학습 활동으로 기록한다. 기록은 학습 피드백 화면에 별점으로 표시된다.
+- **Scope**
+  아이루트
+- **Level**
+  User level
+- **Author**
+  김우주
+- **Last Update**
+  2026.09.15
+- **Status**
+  Implemented (자세 추정은 미구현)
+- **Primary Actor**
+  학생
+- **Preconditions**
+  1. Pi에 카메라가 연결되어 있고 학생 ID가 설정되어 있어야 한다.
+- **Trigger**
+  `rpi/pi_main.py --upload --subject <과목> --understanding <1~5>` 실행.
+- **Success Post Condition**
+  1. 종료(Ctrl+C) 시 `POST /api/activities`로 `LearningActivity` 1건(과목, 학습 시간, 이해도, 집중도)이 저장된다.
+- **Failed Post Condition**
+  1. 얼굴이 검출되지 않은 프레임은 집중도 계산에서 빠진다.
+  2. Backend 연결 실패 → 기록 안 됨.
+#### MAIN SUCCESS SCENARIO
+| Step | Action |
+| ---- | ------ |
+| S    | 학생이 학습을 시작하고 Pi 프로그램을 실행한다. |
+| 1    | dlib으로 가장 큰 얼굴의 68점 랜드마크를 뽑아 138차원 특징을 만든다. |
+| 2    | MLP(128, 64)가 1초마다 집중 상태를 판정한다. |
+| 3    | 종료 시 "집중" 비율을 별점으로 환산한다(12.5% 미만 1, 37.5% 미만 2, 62.5% 미만 3, 87.5% 미만 4, 이상 5). |
+| 4    | `POST /api/activities`로 기록한다. 이해도는 카메라로 잴 수 없어 실행 인자로 받는다. |
+#### EXTENSION SCENARIOS
+| Step | Branching Action |
+| ---- | ---------------- |
+| 2a   | 자세 추정(Hailo-8L 가속)은 키포인트 디코딩이 미구현이라 꺼지고 집중도만 동작한다. 자세 결과는 저장 필드가 없다. |
+#### RELATED INFORMATION
+- **Performance**:
+  집중도 분류 정확도 98.8%는 라벨 좌표 기준이며 실제 카메라에서는 재측정이 필요하다.
+- **Frequency**:
+  학습 세션마다.
+- **Concurrency**:
+  학생 1명당 Pi 1대.
+- **Due Date**:
+  2026.09.15
 
 
 ---
@@ -4846,6 +5126,171 @@ graph TD
 
 ```
 
+#### 추가 구현: Backend AI 연동 계층 (2026.10)
+
+```mermaid
+classDiagram
+    direction LR
+
+    class AiQuestionController {
+        <<controller>>
+        + ask(Request) ResponseEntity~Map~
+    }
+    class AiQuestionService {
+        <<service>>
+        ~ Duration AI_TIMEOUT = 50s
+        ~ int MAX_QUESTION_LENGTH = 300
+        ~ Set~String~ SUPPORTED_SUBJECTS
+        - WebClient fastApiWebClient
+        + ask(String question, String subject) Map
+        - unavailable() ResponseStatusException
+    }
+    class AiQuestionDto_Request {
+        <<dto>>
+        - String question
+        - String subject
+    }
+
+    class AiReportController {
+        <<controller>>
+        - Duration AI_TIMEOUT = 50s
+        + subjectRecommend(Long studentId, String subject)
+        + predictScore(PredictRequest)
+        - requestAiRecommendation(Long, String, String) Map
+        - buildRecommendationReport(String, String, double, String) String
+    }
+
+    class MathAiController {
+        <<controller>>
+        + generateMathReport(Long studentId)
+        + generateWritingReport(Long studentId)
+        + generatePremiumReport(Long studentId)
+        + generateSubjectReport(String subject, Long studentId)
+    }
+    class AiCounselingService {
+        <<service>>
+        - Set~String~ SUBJECT_REPORT_SUPPORTED = 영어·과학·사회
+        + generateMathReport(Long) Mono
+        + generateWritingReport(Long) Mono
+        + generatePremiumReport(Long) Mono
+        + generateSubjectReport(Long, String) Mono
+        - fetchRealStudentData(Long, String) Mono~AiReportRequest~
+        - topWeakConcept(Long, String) String
+        - mostWrongSubject(Long) String
+        - latestPercentile(Long, String) Double
+        - sendToPythonServer(...) Mono~AiReportResponse~
+    }
+
+    class AiClientConfig {
+        <<configuration>>
+        - String aiServerUrl
+        - String aiServerKey
+        + fastApiWebClient() WebClient
+    }
+    class AiServerKeyFilter {
+        <<filter>>
+        - String PROTECTED_PATH = /api/wrong-answer/ai-pipeline
+        + doFilterInternal(...)
+    }
+
+    class WrongAnswerController {
+        <<controller>>
+        + recordWrong(studentId, subject, questionId, conceptTag, errorType)
+        + getAiPipelineData(studentId, subject)
+    }
+    class LearningActivityController {
+        <<controller>>
+        + saveActivity(LearningActivityRequest)
+        + getActivities(Long studentId)
+        + updateFeedback(Long activityId, ...)
+    }
+
+    AiQuestionController --> AiQuestionService
+    AiQuestionController ..> AiQuestionDto_Request
+    MathAiController --> AiCounselingService
+    AiQuestionService --> AiClientConfig : fastApiWebClient
+    AiReportController --> AiClientConfig : fastApiWebClient
+    AiCounselingService --> AiClientConfig : fastApiWebClient
+    AiServerKeyFilter ..> WrongAnswerController : X-AI-Key 검사
+```
+
+- `fastApiWebClient`는 기본 주소(`ai.server.url`)와, 키가 정해져 있으면 `X-AI-Key` 헤더를 붙인다. 연결·응답 한도는 3분이지만 개념 추천(#61)과 질문(#59)은 호출부에서 50초로 끊는다.
+- 삭제: `MathAiService`, `AiDto`(Ollama 모델 직접 호출용, 어디서도 쓰이지 않았음).
+
+#### 추가 구현: AI 서버(FastAPI) 모듈 (2026.10)
+
+```mermaid
+classDiagram
+    direction LR
+
+    class main {
+        <<module>>
+        + _concept_explain(subject, concept, docs, user_message?) str
+        + _qwen_advice(prompt, subject) str
+        - _script_blockers(subject) LogitsProcessorList
+    }
+    class counseling_router {
+        <<router /api/ai>>
+        + subject_recommend(student_id, subject, concept_tag?)
+        + report_math / report_writing / report_premium(req)
+        + report_subject(subject, req)
+        + ai_ask(req)
+        + ai_search(req)
+    }
+    class rag_router {
+        <<router /api/rag>>
+        + rag_search(req)
+        + subject_aware_search(subject, query, k) list
+        + vector_search(query, k) list
+        + detect_subject(query) str
+    }
+    class concept_map {
+        <<module>>
+        + CONCEPT_MAP : dict (138개 항목)
+        + search_concept_map(subject, query, k) list
+    }
+    class grounding {
+        <<module>>
+        + usable_docs(docs) list
+        + context_block(docs) str
+        + concept_user_message(concept, docs) str
+        + question_user_message(question, docs) str
+    }
+    class script_guard {
+        <<module>>
+        + ForeignScriptBlocker
+        + RareHangulBlocker
+        + has_foreign(text) bool
+    }
+    class postprocess {
+        <<module>>
+        + strip_markdown(text) str
+        + strip_chat_frame(text) str
+        + trim_cut_tail(text) str
+    }
+    class gen_lock {
+        <<module>>
+        + GEN_LOCK
+        + TOK_LOCK
+    }
+    class fallback_stats {
+        <<module>>
+        + record(kind, outcome)
+        + snapshot() dict
+    }
+
+    counseling_router --> main : model_registry
+    counseling_router --> rag_router
+    counseling_router --> grounding
+    counseling_router --> fallback_stats
+    rag_router --> concept_map
+    main --> grounding
+    main --> script_guard
+    main --> postprocess
+    main --> gen_lock
+```
+
+
 ### GPS
 ```mermaid
 classDiagram
@@ -7099,5 +7544,173 @@ sequenceDiagram
 가장 큰 차이는 이 시점 이후이다. GithubAuthService.loginWithGithub()은 GitHub에서 넘어온 login 값을 기준으로 UserRepository.findByGithubId()를 조회하고, 이번에는 DB에 이미 저장된 기존 사용자 엔터티가 존재하므로 새롭게 생성하지 않는다. 이후 기존 사용자 정보로 AuthService.issueTokensForUser()를 호출해 JWT 토큰 세트를 새로 발급받는다. 프론트는 새로운 Access Token과 Refresh Token을 저장하여 로그인 상태가 갱신된다.
 
 즉, 재로그인 과정에서는 회원가입이 발생하지 않고, 이미 등록된 사용자의 인증만 수행하는 방식으로 작동한다.
+
+## AI
+
+### 1. AI에게 질문하기 (#59)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as 학생(브라우저)
+    participant FE as Frontend(AskTab)
+    participant AQC as AiQuestionController
+    participant AQS as AiQuestionService
+    participant AI as AI 서버(/api/ai/ask)
+    participant RAG as rag(검색)
+    participant Q as Qwen3-8B
+
+    U->>FE: 과목 선택, 질문 입력, "질문하기"
+    FE->>AQC: POST /api/ai/ask {question, subject?} (JWT)
+    AQC->>AQS: ask(question, subject)
+    alt 빈 질문 / 300자 초과 / 미지원 과목
+        AQS-->>FE: 400 {error: 안내 문구}
+    else 정상
+        AQS->>AI: POST /api/ai/ask (X-AI-Key, 최대 50초)
+        AI->>RAG: detect_subject(question) (subject 없을 때)
+        alt 과목 감지 실패
+            AI-->>AQS: {needSubject: true, answer: null}
+            AQS-->>FE: 200 {needSubject: true}
+            FE-->>U: "과목을 골라 다시 질문해 주세요" (질문 유지)
+        else 과목 있음
+            AI->>RAG: subject_aware_search(subject, question, 3)
+            RAG-->>AI: ConceptMap / FAISS 자료
+            AI->>Q: generate(근거 + 질문, 문자 차단)
+            Q-->>AI: 답변
+            AI->>AI: 마크다운·챗봇 말투 제거
+            AI-->>AQS: {subject, answer, grounded}
+            AQS-->>FE: 200 {subject, answer, grounded}
+            FE-->>U: 답변 카드(KaTeX 수식, 근거 표시)
+        end
+    end
+    opt AI 서버 연결 실패 / 5xx / 50초 초과 / 빈 답변
+        AQS-->>FE: 503 {error: "AI 서버가 지금 답변할 수 없습니다"}
+    end
+```
+
+### 2. AI 맞춤 개념 추천 — AI 위임과 규칙 기반 대체 (#61)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant FE as Frontend(ReportPanel / CounselingTab)
+    participant ARC as AiReportController
+    participant GR as GradeRepository
+    participant AI as AI 서버
+    participant Q as Qwen3-8B
+
+    FE->>ARC: POST /api/ai/report/subject-recommend?studentId&subject
+    ARC->>GR: findByStudentIdAndSubjectOrderByExamDateDesc
+    GR-->>ARC: 성적 목록 (weakConceptTag, 점수)
+    ARC->>AI: POST /api/ai/report/subject-recommend?student_id&subject&concept_tag (최대 50초)
+    alt AI 성공
+        AI->>AI: ConceptMap → FAISS 검색, 근거 선별
+        AI->>Q: 개념 설명 생성
+        Q-->>AI: 설명
+        AI-->>ARC: {targetConcept, aiRecommendationReport}
+        ARC-->>FE: 200 AI 리포트
+    else AI 실패 / 50초 초과
+        ARC->>ARC: buildRecommendationReport(평균, 추세)
+        ARC-->>FE: 200 규칙 기반 리포트(같은 형식)
+    end
+```
+
+### 3. 과목별 메타인지 리포트 (#60)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant FE as Frontend
+    participant MC as MathAiController(/api/counseling)
+    participant ACS as AiCounselingService
+    participant DB as DB(Student·Grade·WrongAnswer·LearningActivity)
+    participant AI as AI 서버(/api/ai/report/{과목})
+    participant AR as AiRecommendationRepository
+
+    FE->>MC: POST /api/counseling/영어?studentId
+    MC->>ACS: generateSubjectReport(studentId, "영어")
+    ACS->>DB: 학생 정보, 최근 강사 피드백, 최다 오답 개념, 최근 백분위
+    DB-->>ACS: AiReportRequest
+    ACS->>AI: POST /api/ai/report/영어
+    AI-->>ACS: {careerAnalysis, learningGuide}
+    ACS-)AR: save(AiRecommendation) (비동기)
+    ACS-->>FE: 200 리포트
+    opt AI 서버 연결 실패
+        ACS-->>FE: 503
+    end
+```
+
+### 4. OCR 오답 기록이 리포트에 반영되는 흐름 (#62 → #60, #61)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Pi as 라즈베리파이(OCR)
+    participant WAC as WrongAnswerController
+    participant DB as WrongAnswer 테이블
+    participant ACS as AiCounselingService
+
+    Pi->>Pi: bbox로 답 영역 자르기 → CRNN 인식 → 유사도 0.8 기준 채점
+    loop 오답 문항마다
+        Pi->>WAC: POST /api/wrong-answer/record?studentId&subject&questionId&conceptTag
+        WAC->>DB: 저장 (같은 문항이면 failCount + 1)
+    end
+    Note over ACS,DB: 이후 리포트 생성 시
+    ACS->>DB: findTopWeaknessByStudentIdAndSubject
+    DB-->>ACS: 최다 오답 개념 → weakConcept
+```
+
+### 5. 학습 집중도 기록 (#63)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Cam as Pi 카메라
+    participant Pi as pi_main.py
+    participant LAC as LearningActivityController
+    participant FE as Frontend(FeedbackTab)
+
+    loop 1초마다
+        Cam->>Pi: 프레임
+        Pi->>Pi: dlib 랜드마크 → MLP → 집중/비집중/졸음
+    end
+    Pi->>Pi: 종료 시 집중 비율 → 별점(1~5)
+    Pi->>LAC: POST /api/activities {subject, studyDurationMinutes, understandingScore, concentrationScore}
+    FE->>LAC: GET /api/activities/{studentId}
+    LAC-->>FE: 학습 활동 목록(집중도 별점 표시)
+```
+
+### 6. AI 연동 공통 구현 사항 (2026.10)
+
+#### 배포 구성 (2026-10-01, AWS 계정 207208119870, 서울 리전)
+
+| 서비스 | 주소 | 구성 |
+|---|---|---|
+| Frontend | https://d2nos5u98g310z.cloudfront.net | S3 + CloudFront, `main` push 시 자동 배포 |
+| Backend | https://d2t8h2oy220lpg.cloudfront.net | EC2(t3.small) + CloudFront(원본 응답 한도 60초), `develop` push 시 자동 배포 |
+| AI 서버 | Tailscale 사설 주소:8082 | GPU PC(RTX 5070 Ti), 인터넷에 열지 않고 EC2와 같은 Tailscale 네트워크로만 연결 |
+
+#### Backend ↔ AI 서버
+- Backend는 `AI_SERVER_URL`(Tailscale 주소)과 `AI_SERVER_KEY`를 환경변수로 받는다. 키가 있으면 모든 AI 호출에 `X-AI-Key`를 붙이고, AI 서버는 키가 없거나 틀린 `/api/` 요청을 401로 거부한다.
+- AI 서버가 Backend를 부르는 `/api/wrong-answer/ai-pipeline`은 JWT 없이 열려 있는 대신 `AiServerKeyFilter`가 같은 키로 막는다.
+- AI 대기 한도: 개념 추천·질문은 **50초**(CloudFront 60초보다 짧아야 규칙 기반 대체·503이 제때 나간다). 리포트(`/api/counseling/*`)는 WebClient 기본 3분이라 60초를 넘기면 CloudFront가 먼저 504를 돌려줄 수 있다.
+
+#### AI 서버 생성 규칙
+- 모델: Qwen3-8B 4bit 베이스 하나(과목 어댑터는 로드하지 않음). 실패 시 Ollama(llama3.1) 대체. 폴백 횟수는 `GET /api/ai/stats/fallback`(kind: concept·advice·ask).
+- 생성은 GPU 한 대에서 `GEN_LOCK`으로 한 번에 하나씩 한다. 동시 요청은 순서대로 처리되어 뒤 요청이 늦어진다.
+- 근거: ConceptMap(사람이 쓴 개념 노트, 138개 항목, 운영 DB 개념 태그 33개 모두 대응)에서 온 자료만 프롬프트에 붙인다. FAISS 교과서 조각은 근거로 붙이지 않는다.
+- 출력 정리: 다른 문자(한자·가나·키릴·베트남어 등)와 교과 문서에 한 번도 나오지 않은 한글 음절은 생성 단계에서 막고, 국어·사회는 영문자도 막는다. 마크다운 기호·표·반복 기호·챗봇식 머리말/맺음말은 후처리로 지운다. 수식(`$…$`)과 화살표(→ ⇔)는 남긴다.
+- 품질 기준: 사실 정확도 평가(47개 개념, 사람이 판정) 44/47.
+
+#### 보안·권한
+- `/api/ai/**`, `/api/counseling/**`는 로그인(JWT) 필요. `/api/ai/ask`는 토큰 없이 부르면 403.
+- 질문 길이 300자 제한, 지원 과목 화이트리스트(수학·영어·국어·과학·사회).
+
+#### 알려진 제약
+1. 동시 사용: 생성이 순차라 수학 개념 추천을 3명이 동시에 누르면 마지막 요청이 50초를 넘는다(규칙 기반으로 대체).
+2. AI 답변은 샘플링 생성이라 드물게 용어 실수나 세부 오류가 있다(예: 허수부를 다른 말로 표현). 화면에 "교과서로 확인" 안내를 둔다.
+3. OCR·집중도는 실제 Pi 촬영 환경에서 정확도를 재지 않았다. 자세 추정은 미구현.
+4. Backend 테스트 9개 파일이 6월 이후 코드 변경을 따라가지 못해 컴파일되지 않는다(배포는 테스트를 건너뜀). 새로 추가한 `AiQuestionServiceTest`(5개)는 통과한다.
+
 
 sds 내용인데 여기에서 다이렉트 메세지와 관련 부분을 삭제해주고, nfc 기능에 탑승/하차 알림과 탑승시 기사의 gps 공유 하차시 기사의 gps 공유 중지하고, 출결도 nfc를 통해서 관리하는 기능을 만들었으니까 추가해서 수정해줘
